@@ -7,11 +7,11 @@ tiktoken>=0.7              # exact token counting (word-based fallback if absent
 pytest>=8.0                # test suite
 pytest-cov>=5.0
 
-# ---- Phase 2: retrieval (install when Phase 2 starts) -----------------------
-# sentence-transformers>=3.0
-# chromadb>=0.5
-# rank-bm25>=0.2.2
-# numpy>=1.26
+# ---- Phase 2: retrieval (installed) -----------------------------------------
+sentence-transformers>=3.0
+chromadb>=0.5
+rank-bm25>=0.2.2
+numpy>=1.26
 
 # ---- Phase 3: generation + interfaces ---------------------------------------
 # ollama>=0.3

@@ -15,8 +15,21 @@ information.
 | Phase | Scope | Status |
 |---|---|---|
 | **Phase 1** | Foundation & ingestion — config, loaders, cleaner, chunker, pipeline | ✅ **Complete** |
-| Phase 2 | Embeddings, ChromaDB, golden set, evaluation harness, BM25 hybrid + RRF | ⬜ Next |
-| Phase 3 | Cross-encoder re-ranking, grounded generation, refusal gate, UI, ablations | ⬜ |
+| **Phase 2** | Embeddings + cache, ChromaDB, 60-question golden set, evaluation harness, BM25 + RRF hybrid | ✅ **Complete** |
+| Phase 3 | Cross-encoder re-ranking, Groq grounded generation, refusal gate, UI, full ablation | ⬜ Next |
+
+### Headline result (measured, 51 golden questions)
+
+| Configuration | MRR@10 | nDCG@10 | Recall@10 | **Paraphrase Hit@3** |
+|---|---|---|---|---|
+| A0 — BM25 keyword baseline | 0.738 | 0.738 | 0.853 | **0.462** |
+| A1 — Dense semantic | **0.898** | **0.886** | 0.971 | **1.000** |
+| A4 — Hybrid + RRF | 0.852 | 0.861 | **0.980** | 0.692 |
+
+On paraphrased questions, keyword search misses entirely more than half the time;
+semantic search finds the answer **every time**. Full analysis — including a
+refuted hypothesis about hybrid retrieval — in
+[`reports/PHASE2_REPORT.md`](reports/PHASE2_REPORT.md).
 
 ---
 
@@ -25,11 +38,21 @@ information.
 ```bash
 pip install -r requirements.txt
 
+# Phase 1 -- ingestion
 python -m src.cli ingest            # parse -> clean -> chunk -> chunks.jsonl
 python -m src.cli stats             # chunk-set statistics
 python -m src.cli inspect --n 3     # eyeball a few chunks for QA
-python -m pytest tests/ -q          # 34 tests
+
+# Phase 2 -- retrieval + measurement
+python -m src.cli index             # embed + build dense (Chroma) and BM25 indexes
+python -m src.cli query "can I get money back for a cancelled trip?" --compare
+python -m src.cli evaluate          # golden set -> reports/eval_report.md + ablation.md
+
+python -m pytest tests/ -q          # 71 tests
 ```
+
+`--compare` runs BM25, dense and hybrid side by side on the same query — the
+fastest way to see the vocabulary-mismatch problem this project exists to solve.
 
 Everything in Phase 1 runs on CPU with no model downloads and no network access.
 
