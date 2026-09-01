@@ -199,9 +199,7 @@ def cmd_reid_eval(cfg, args) -> int:
         ("Post-occlusion recovery per sequence (M17)", render_table(
             ["Sequence", "Events found", "Scorable", "Recovered", "Rate",
              "Gallery restores", "FPS"], rows_out, markdown=True) +
-         "
-
-*Events found* are genuine occlusions in the ground truth. *Scorable* are "
+         "\n\n*Events found* are genuine occlusions in the ground truth. *Scorable* are "
          "those where the detector saw the object on both sides of the gap — an event that "
          "is not scorable is a **detection** failure, and charging it to ReID would measure "
          "the wrong component."),
