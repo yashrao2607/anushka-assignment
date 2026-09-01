@@ -130,6 +130,16 @@ def load_retriever(cfg: Config, backend: str | None = None) -> Retriever:
         except ImportError:
             bm25 = None
 
+    reranker = None
+    rrcfg = cfg.extra.get("rerank", {})
+    if rrcfg.get("enabled", True):
+        from ..retrieve.reranker import CrossEncoderReranker
+
+        reranker = CrossEncoderReranker(
+            model_name=rrcfg.get("model", "cross-encoder/ms-marco-MiniLM-L-6-v2"),
+            max_candidates=int(rrcfg.get("max_candidates", 40)),
+        )
+
     rcfg = cfg.extra.get("retrieval", {})
     return Retriever(
         embedder=embedder,
@@ -140,4 +150,5 @@ def load_retriever(cfg: Config, backend: str | None = None) -> Retriever:
         bm25_top_n=int(rcfg.get("bm25_top_n", 25)),
         rrf_k=int(rcfg.get("rrf_k", 60)),
         final_top_k=int(rcfg.get("final_top_k", 5)),
+        reranker=reranker,
     )

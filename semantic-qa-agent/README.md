@@ -54,7 +54,8 @@ python -m pytest tests/ -q          # 71 tests
 `--compare` runs BM25, dense and hybrid side by side on the same query — the
 fastest way to see the vocabulary-mismatch problem this project exists to solve.
 
-Everything in Phase 1 runs on CPU with no model downloads and no network access.
+Runs entirely on CPU. Phase 1 needs no model downloads at all; Phase 2 downloads
+one 80 MB embedding model on first use and is fully offline thereafter.
 
 ### Tuning without editing code
 
@@ -118,23 +119,74 @@ src/ingest/loaders.py       6 formats, lazy optional deps, graceful failure
 src/ingest/cleaner.py       ordered cleaning transforms
 src/ingest/chunker.py       recursive splitter, overlap, heading detection
 src/ingest/pipeline.py      orchestration, dedupe, manifest, reports
-src/cli.py                  ingest · stats · inspect (query/evaluate/serve stubbed)
-tests/test_phase1.py        34 tests across all four Phase 1 parts
-reports/PHASE1_REPORT.md    verified Phase 1 completion record
+src/embed/embedder.py       bi-encoder + SQLite embedding cache
+src/store/base.py           VectorStore ABC · ChromaStore · NumpyStore · BM25Index
+src/store/index.py          index build/load, the Phase 1 -> Phase 2 bridge
+src/retrieve/retriever.py   dense / sparse / hybrid retrieval + RRF fusion
+src/eval/metrics.py         P@k, R@k, MRR, nDCG, MAP -- written from scratch
+src/eval/golden.py          span-based gold resolution + graded relevance
+src/eval/runner.py          ablation runner + report writers
+src/cli.py                  ingest · stats · inspect · index · query · evaluate
+data/golden_set.jsonl       60 hand-authored questions, graded relevance
+tests/test_phase1.py        34 tests   ·   tests/test_phase2.py  37 tests
+reports/PHASE1_REPORT.md    ·  PHASE2_REPORT.md  ·  eval_report.md  ·  ablation.md
 ```
 
 ---
 
-## Verified Phase 1 run
+## What Phase 2 adds
 
 ```
-INGESTION SUMMARY                      CHUNK QUALITY
-Files found                     6      Chunks                        5
-Files ingested                  5      Tokens: median              237
-Files skipped (unsupported)     1      Chunks with a heading         5
-Files failed (parse error)      0      Config fingerprint 6b87171666a8
-Chunks produced                 5
-Duration (s)                 0.01      34 tests passed
+data/processed/chunks.jsonl
+   │
+   ├─ [5] EMBEDDER    all-MiniLM-L6-v2, 384-d, L2-normalised, SQLite-cached
+   │        ├──────► ChromaDB (HNSW, cosine)   ── dense index
+   │        └──────► BM25Okapi (pickled)       ── sparse index
+   │
+   └─ QUERY ─┬─ dense  top-25 ─┐
+             └─ bm25   top-25 ─┴─► RRF fusion (k=60) ─► top-k results
+                                          │
+                                          ▼
+                        golden set (60 Qs) ─► P@k · R@k · MRR · nDCG · Hit@k
+                                          ─► reports/eval_report.md + ablation.md
 ```
 
-Full detail in [`reports/PHASE1_REPORT.md`](reports/PHASE1_REPORT.md).
+### Design decisions worth knowing
+
+- **Gold is labelled by text span, not chunk id.** Chunk ids change whenever
+  chunk size changes, which would invalidate the entire golden set on every
+  ablation arm. Spans are resolved against whatever chunk set exists, so the
+  golden set is authored once and survives every configuration.
+- **Graded relevance 0–3**, so nDCG is real rather than a binary proxy. Grade-1
+  (same-section context) counts toward nDCG but is excluded from precision.
+- **Metrics written from scratch** and unit-tested against hand-computed values
+  in the test docstrings — which caught an arithmetic error in my own working.
+- **RRF over weighted blending.** Cosine and BM25 scores are on incomparable
+  scales; RRF uses ranks only, so it needs no tuning and no normalisation.
+- **The golden set validates itself.** A test fails the build if any gold span
+  cannot be resolved, because an unresolvable span silently scores zero and
+  would depress the report for reasons unrelated to retrieval.
+
+---
+
+## Verified run
+
+```
+$ python -m src.cli ingest
+15 files ingested · 1 skipped (unsupported) · 0 failed · 48 chunks · 48 with headings
+
+$ python -m src.cli index
+48 chunks · dim 384 · backend ChromaStore · bm25 rank_bm25.BM25Okapi
+
+$ python -m src.cli evaluate
+60 questions · 51 answerable · 51 resolved · 0 warnings
+A0 BM25    P@3 0.314  R@10 0.853  MRR 0.738  nDCG 0.738
+A1 Dense   P@3 0.366  R@10 0.971  MRR 0.898  nDCG 0.886
+A4 Hybrid  P@3 0.379  R@10 0.980  MRR 0.852  nDCG 0.861
+
+$ python -m pytest tests/ -q
+71 passed in 0.85s
+```
+
+Full detail: [`reports/PHASE1_REPORT.md`](reports/PHASE1_REPORT.md) ·
+[`reports/PHASE2_REPORT.md`](reports/PHASE2_REPORT.md)

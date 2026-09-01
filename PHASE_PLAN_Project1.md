@@ -36,7 +36,7 @@ Each phase is a **shippable, demonstrable milestone** — not an arbitrary time-
 
 ---
 
-## PHASE 2 — Retrieval Core & Measurement (Days 5–9) ⬜
+## PHASE 2 — Retrieval Core & Measurement (Days 5–9) ✅
 
 **Goal:** Make the corpus searchable by meaning, and — critically — build the measuring instrument *before* tuning anything, so every later improvement is provable rather than felt.
 
@@ -44,10 +44,10 @@ Each phase is a **shippable, demonstrable milestone** — not an arbitrary time-
 
 | Part | Deliverable | Exit criterion |
 |---|---|---|
-| **2.1** | Embedding layer — Sentence-Transformers, batching, L2 normalisation, SQLite embedding cache | 5,000 chunks embed in < 3 min; a re-run is a cache hit and near-instant |
-| **2.2** | ChromaDB persistent store + dense cosine retrieval + CLI `query` | Top-k chunks returned for a natural-language query with scores and metadata filters |
-| **2.3** | **60-question golden set** (graded relevance 0–3) + evaluation harness computing P@k, R@k, MRR, nDCG, Hit@1 | `python -m src.cli evaluate` emits `reports/eval_report.md` with real numbers; metrics unit-tested against hand-computed fixtures |
-| **2.4** | BM25 sparse index + **Reciprocal Rank Fusion** hybrid retrieval | Exact-identifier queries rank #1; ablation rows A0–A4 filled with measured numbers |
+| **2.1** | Embedding layer — Sentence-Transformers, batching, L2 normalisation, SQLite embedding cache | ✅ 48 chunks in 16.8 s cold, near-instant warm |
+| **2.2** | ChromaDB persistent store + dense cosine retrieval + CLI `query` | ✅ ChromaStore live; `--compare` shows all three modes side by side |
+| **2.3** | **60-question golden set** (graded relevance 0–3) + evaluation harness computing P@k, R@k, MRR, nDCG, Hit@1 | ✅ 51 answerable, 0 unresolved; metrics hand-verified |
+| **2.4** | BM25 sparse index + **Reciprocal Rank Fusion** hybrid retrieval | ✅ `ERR_4092` ranks #1; A0/A1/A4 measured, plus hypothesis arm A4b |
 
 **Phase 2 exit demo:** side-by-side — the same query through keyword search and semantic search, with the metrics table proving the difference.
 
@@ -106,4 +106,10 @@ Delivered in `semantic-qa-agent/`:
 | Test suite | `tests/` |
 | Phase report | `semantic-qa-agent/reports/PHASE1_REPORT.md` |
 
-**Next action:** begin Phase 2, Part 2.1 (embedding layer).
+**Next action:** begin Phase 3, Part 3.1 (cross-encoder re-ranker).
+
+Phase 2 measured result: semantic retrieval beats the keyword baseline by +22%
+MRR, and lifts paraphrase Hit@3 from 0.462 to 1.000. Hybrid+RRF wins recall but
+*loses* rank quality to dense-only — a refuted hypothesis documented in
+`semantic-qa-agent/reports/PHASE2_REPORT.md` §5, and precisely the gap the
+Phase 3 re-ranker exists to close.

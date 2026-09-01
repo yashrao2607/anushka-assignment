@@ -74,10 +74,14 @@ class RetrievalTrace:
     bm25_ms: float = 0.0
     embed_ms: float = 0.0
     fuse_ms: float = 0.0
+    rerank_ms: float = 0.0
     total_ms: float = 0.0
     n_dense: int = 0
     n_bm25: int = 0
     n_fused: int = 0
+    n_reranked: int = 0
+    reranked: bool = False
+    top_score: float = 0.0
     notes: list[str] = field(default_factory=list)
 
 
@@ -106,6 +110,7 @@ class Retriever:
         bm25_top_n: int = 25,
         rrf_k: int = 60,
         final_top_k: int = 5,
+        reranker=None,
     ) -> None:
         self.embedder = embedder
         self.vector_store = vector_store
@@ -115,6 +120,7 @@ class Retriever:
         self.bm25_top_n = bm25_top_n
         self.rrf_k = rrf_k
         self.final_top_k = final_top_k
+        self.reranker = reranker
 
     # -- individual legs ----------------------------------------------------
     def _dense(self, query: str, top_n: int, where: dict | None,
@@ -146,8 +152,10 @@ class Retriever:
         top_k: int | None = None,
         mode: Mode = "hybrid",
         where: dict | None = None,
+        rerank: bool | None = None,
     ) -> tuple[list[RetrievedChunk], RetrievalTrace]:
         top_k = top_k or self.final_top_k
+        use_rerank = self.reranker is not None if rerank is None else bool(rerank)
         trace = RetrievalTrace(mode=mode)
         started = time.perf_counter()
 
@@ -180,10 +188,17 @@ class Retriever:
         trace.fuse_ms = (time.perf_counter() - t_fuse) * 1000
         trace.n_fused = len(order)
 
-        results: list[RetrievedChunk] = []
-        for rank, chunk_id in enumerate(order[:top_k], start=1):
+        # Stage 1 produced a wide candidate pool. When re-ranking is on, keep the
+        # whole pool for the cross-encoder to reorder; otherwise cut to top_k now.
+        pool_size = (
+            min(len(order), self.reranker.max_candidates)
+            if use_rerank and self.reranker else top_k
+        )
+
+        candidates: list[RetrievedChunk] = []
+        for rank, chunk_id in enumerate(order[:pool_size], start=1):
             record = self.chunks.get(chunk_id, {})
-            results.append(
+            candidates.append(
                 RetrievedChunk(
                     chunk_id=chunk_id,
                     text=record.get("text", ""),
@@ -196,12 +211,25 @@ class Retriever:
                     final_rank=rank,
                 )
             )
+
+        # -- Stage 2: cross-encoder re-ranking ------------------------------
+        if use_rerank and self.reranker and candidates:
+            t_rerank = time.perf_counter()
+            results = self.reranker.rerank(query, candidates, top_k)
+            trace.rerank_ms = (time.perf_counter() - t_rerank) * 1000
+            trace.n_reranked = min(len(candidates), self.reranker.max_candidates)
+            trace.reranked = self.reranker.available
+        else:
+            results = candidates[:top_k]
+
+        trace.top_score = results[0].score if results else 0.0
         trace.total_ms = (time.perf_counter() - started) * 1000
         return results, trace
 
-    def retrieve_ids(self, query: str, top_k: int, mode: Mode = "hybrid") -> list[str]:
+    def retrieve_ids(self, query: str, top_k: int, mode: Mode = "hybrid",
+                     rerank: bool | None = None) -> list[str]:
         """Ranked chunk ids only -- the hot path used by the evaluation harness."""
-        hits, _ = self.retrieve(query, top_k=top_k, mode=mode)
+        hits, _ = self.retrieve(query, top_k=top_k, mode=mode, rerank=rerank)
         return [h.chunk_id for h in hits]
 
 
