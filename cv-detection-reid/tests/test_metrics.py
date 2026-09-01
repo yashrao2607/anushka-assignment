@@ -97,7 +97,7 @@ def test_matching_is_greedy_by_confidence_not_by_iou():
     """The COCO protocol: the most confident detection claims the GT first."""
     gts = [GTBox("f1", 0, (0, 0, 10, 10))]
     preds = [
-        PredBox("f1", 0, (2, 2, 12, 12), 0.95),   # lower IoU, higher conf -> wins
+        PredBox("f1", 0, (1, 1, 11, 11), 0.95),   # IoU 0.68, higher conf -> wins
         PredBox("f1", 0, (0, 0, 10, 10), 0.60),   # perfect IoU, lower conf -> FP
     ]
     m = match_predictions(preds, gts, 0.5)
@@ -157,10 +157,10 @@ def test_ap_worked_example_two_of_four_recalled():
     precision     = 1/1, 1/2, 2/3
     recall        = 0.5, 0.5, 1.0
     Monotone envelope: [1.0, 2/3, 2/3].
-    101-point sampling: recall levels <= 0.5 (52 of them, 0.00..0.50) take the
-    first index with recall >= level -> precision 1.0; levels 0.51..1.00
-    (49 of them) take the index with recall 1.0 -> precision 2/3.
-    AP = (52 * 1.0 + 49 * 2/3) / 101.
+    101-point sampling: recall levels 0.00..0.50 (51 of them) take the first
+    index whose recall reaches them -> precision 1.0; levels 0.51..1.00 (50 of
+    them) take the index with recall 1.0 -> precision 2/3.
+    AP = (51 * 1.0 + 50 * 2/3) / 101 = 84.333/101.
     """
     gts = [GTBox("f1", 0, (0, 0, 10, 10)), GTBox("f2", 0, (0, 0, 10, 10))]
     preds = [
@@ -170,7 +170,7 @@ def test_ap_worked_example_two_of_four_recalled():
     ]
     m = match_predictions(preds, gts, 0.5)
     p, r = precision_recall_curve(m)
-    expected = (52 * 1.0 + 49 * (2 / 3)) / 101
+    expected = (51 * 1.0 + 50 * (2 / 3)) / 101
     assert average_precision(p, r) == pytest.approx(expected, abs=1e-6)
 
 

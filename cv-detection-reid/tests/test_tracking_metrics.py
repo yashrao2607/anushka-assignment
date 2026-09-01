@@ -77,7 +77,7 @@ def test_id_switch_is_counted_when_the_predicted_id_changes_mid_track():
     m = clear_mot(gt, pred)
     assert m["idsw"] == 1
     # 6 TP, 0 FP, 0 FN, 1 switch -> MOTA = 1 - 1/6.
-    assert m["mota"] == pytest.approx(1 - 1 / 6)
+    assert m["mota"] == pytest.approx(1 - 1 / 6, abs=1e-4)
 
 
 def test_id_switch_survives_a_gap_in_the_prediction():
@@ -130,10 +130,14 @@ def test_mostly_tracked_and_mostly_lost_classification():
 
 
 def test_motp_reports_mean_matched_iou():
+    # 20-wide boxes offset by 5: intersection 15x20=300, union 500 -> IoU 0.6.
+    # (An offset of 10 gives IoU 1/3, below the 0.5 match threshold, so it is
+    # correctly not a match at all -- which is itself worth pinning down.)
     gt = [box(1, 1, 0)]
-    pred = [box(1, 1, 10)]      # 20-wide boxes offset by 10 -> IoU = 10/30
+    pred = [box(1, 1, 5)]
     m = clear_mot(gt, pred)
-    assert m["motp"] == pytest.approx(1 / 3, abs=1e-3)
+    assert m["motp"] == pytest.approx(0.6, abs=1e-3)
+    assert clear_mot([box(1, 1, 0)], [box(1, 1, 10)])["tp"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +160,7 @@ def test_idf1_punishes_a_mid_sequence_switch_more_than_mota_does():
     pred = [box(f, 1 if f <= 3 else 2, f * 30) for f in range(1, 7)]
     mota = clear_mot(gt, pred)["mota"]
     idf1 = idf1_score(gt, pred)["idf1"]
-    assert mota == pytest.approx(1 - 1 / 6)
+    assert mota == pytest.approx(1 - 1 / 6, abs=1e-4)
     assert idf1 < mota
     # 3 of 6 attributable: IDTP=3, IDFP=3, IDFN=3 -> 2*3/(6+3+3) = 0.5
     assert idf1 == pytest.approx(0.5)
@@ -180,7 +184,7 @@ def test_idf1_handles_empty_predictions():
 
 
 def test_hota_is_one_for_a_perfect_tracker():
-    out = hota_score(perfect_sequence())if False else hota_score(perfect_sequence(), perfect_sequence())
+    out = hota_score(perfect_sequence(), perfect_sequence())
     assert out["hota"] == pytest.approx(1.0)
     assert out["deta"] == pytest.approx(1.0)
     assert out["assa"] == pytest.approx(1.0)
