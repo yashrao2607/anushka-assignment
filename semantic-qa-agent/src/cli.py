@@ -55,7 +55,23 @@ def _build_parser() -> argparse.ArgumentParser:
     p_eval = sub.add_parser("evaluate", help="run the golden set and write the reports")
     p_eval.add_argument("--only", default=None, help="run a single ablation arm, e.g. A4")
 
-    sub.add_parser("serve", help="[Phase 3] not yet implemented")
+    p_ask = sub.add_parser("ask", help="ask a question and get a cited answer")
+    p_ask.add_argument("text", help="the question")
+    p_ask.add_argument("-k", "--top-k", type=int, default=5)
+    p_ask.add_argument("--threshold", type=float, default=None,
+                       help="override the refusal threshold")
+    p_ask.add_argument("--no-llm", action="store_true",
+                       help="retrieval only -- makes zero API calls")
+
+    sub.add_parser("calibrate", help="calibrate the refusal threshold (0 API calls)")
+
+    p_judge = sub.add_parser("judge", help="LLM-judged answer quality on a subset")
+    p_judge.add_argument("--n", type=int, default=12,
+                         help="stratified sample size (keeps free-tier usage low)")
+    p_judge.add_argument("--max-calls", type=int, default=60,
+                         help="hard cap on live API calls")
+
+    sub.add_parser("serve", help="print the Streamlit launch command")
     return parser
 
 
@@ -215,10 +231,86 @@ def cmd_evaluate(args, cfg) -> int:
     return 0
 
 
-def cmd_not_ready(args, cfg) -> int:
-    print(f"`{args.command}` is scheduled for Phase 3. "
-          f"Phase 2 delivers: index, query, evaluate.")
-    return 2
+def cmd_ask(args, cfg) -> int:
+    from .generate.answerer import build_answerer
+
+    setup_logging(cfg.path("logs_dir"), args.verbose)
+    answerer = build_answerer(cfg, threshold=args.threshold)
+    response = answerer.answer(
+        args.text, top_k=args.top_k, allow_llm=not args.no_llm
+    )
+
+    print(f'
+Q: {response.query}')
+    print("=" * 74)
+    print(response.answer)
+    print("=" * 74)
+    print(f"confidence {response.confidence:.3f} | threshold {answerer.threshold:.2f} "
+          f"| {'REFUSED' if response.refused else 'answered'}"
+          f"{' | cached' if response.from_cache else ''}")
+    if response.refusal_reason:
+        print(f"reason: {response.refusal_reason}  (no LLM call was made)")
+    if response.citation_violations:
+        print(f"citation violations: {response.citation_violations}")
+
+    if response.citations:
+        print("
+SOURCES")
+        for c in response.citations:
+            print(f"  [{c.marker}] {c.doc_title} > {c.section_heading} (p.{c.page_no})")
+            print(f"      {c.quote[:150]}...")
+    if response.latency_ms:
+        print(f"
+latency: {response.latency_ms}")
+    print(f"api usage: {answerer.client.usage_summary()}")
+    return 0
+
+
+def cmd_calibrate(args, cfg) -> int:
+    from .eval.calibrate import run_calibration
+    from .generate.answerer import build_answerer
+
+    setup_logging(cfg.path("logs_dir"), args.verbose)
+    payload = run_calibration(cfg, build_answerer(cfg))
+    best = payload["at_recommended"]
+    print()
+    print(render_table([
+        ("Answerable questions", payload["n_answerable"]),
+        ("Unanswerable questions", payload["n_unanswerable"]),
+        ("Answerable conf (median)", payload["answerable_confidence"]["median"]),
+        ("Unanswerable conf (median)", payload["unanswerable_confidence"]["median"]),
+        ("Recommended threshold", payload["recommended_threshold"]),
+        ("Answer correctness", best["answer_correctness"]),
+        ("Refusal correctness", best["refusal_correctness"]),
+        ("Balanced accuracy", best["balanced"]),
+        ("LLM calls used", 0),
+    ], "REFUSAL CALIBRATION"))
+    print("
+reports/calibration.md · reports/calibration.json")
+    return 0
+
+
+def cmd_judge(args, cfg) -> int:
+    from .eval.judge import run_judgement
+    from .generate.answerer import build_answerer
+
+    setup_logging(cfg.path("logs_dir"), args.verbose)
+    answerer = build_answerer(cfg)
+    answerer.client.max_calls = args.max_calls
+    payload = run_judgement(cfg, answerer, sample_size=args.n)
+    print()
+    print(render_table(list(payload["summary"].items()), "ANSWER QUALITY"))
+    print("
+reports/answer_quality.md")
+    return 0
+
+
+def cmd_serve(args, cfg) -> int:
+    print("Launch the UI with:
+
+    streamlit run app.py
+")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -238,7 +330,8 @@ def main(argv: list[str] | None = None) -> int:
     handlers = {
         "ingest": cmd_ingest, "stats": cmd_stats, "inspect": cmd_inspect,
         "index": cmd_index, "query": cmd_query, "evaluate": cmd_evaluate,
-        "serve": cmd_not_ready,
+        "ask": cmd_ask, "calibrate": cmd_calibrate, "judge": cmd_judge,
+        "serve": cmd_serve,
     }
     try:
         return handlers[args.command](args, cfg)
