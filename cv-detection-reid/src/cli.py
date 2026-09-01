@@ -25,6 +25,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from typing import Any
+
 from .config import ConfigError, load_config
 from .utils.logging import get_logger, render_table, setup_logging
 
@@ -369,7 +371,8 @@ def _test_videos(cfg, split: str) -> list[Path]:
     return [cfg.path("raw_videos_dir") / n for n in names]
 
 
-def _eval_tracker_on(cfg, videos, tracker_type, weights, max_frames):
+def _eval_tracker_on(cfg, videos, tracker_type, weights, max_frames,
+                     with_reid=False, with_gallery=False, extractor=None):
     from .eval.tracking_metrics import TrackBox, evaluate_tracking
     from .pipeline.track_video import load_gt_tracks, track_video
 
@@ -385,7 +388,8 @@ def _eval_tracker_on(cfg, videos, tracker_type, weights, max_frames):
                         extra={"event": "no_track_gt"})
             continue
         res = track_video(cfg, video, tracker_type=tracker_type, weights=weights,
-                          max_frames=max_frames)
+                          max_frames=max_frames, with_reid=with_reid,
+                          with_gallery=with_gallery, extractor=extractor)
         gt = [b for b in load_gt_tracks(gt_file) if not max_frames or b.frame <= max_frames]
 
         # Offset frame ids and track ids so several sequences can be pooled into
@@ -465,39 +469,55 @@ def cmd_ablate(cfg, args) -> int:
     base = cfg.detection.weights
     tuned = args.weights
 
+    # Each row changes exactly ONE thing from the row above it, and every row
+    # runs on identical detections, so a delta is attributable to the component
+    # that was added rather than to a confound (PRD US-3.3).
     plan = [
-        ("B0", "COCO-pretrained, zero fine-tuning, no tracker", base, None),
-        ("B1", "COCO-pretrained + IoU-only tracker", base, "iou"),
-        ("B3", "COCO-pretrained + ByteTrack", base, "bytetrack"),
-        ("B4", "COCO-pretrained + BoT-SORT (GMC, no ReID)", base, "botsort"),
+        ("B0", "COCO-pretrained, zero fine-tuning, no tracker", base, None, False, False),
+        ("B1", "B0 + IoU-only tracker", base, "iou", False, False),
+        ("B3", "B0 + ByteTrack (Kalman + two-stage)", base, "bytetrack", False, False),
+        ("B4", "B0 + BoT-SORT (GMC, no ReID)", base, "botsort", False, False),
+        ("B5", "B4 + OSNet/ReID appearance cost", base, "botsort", True, False),
+        ("B6", "B5 + ReID gallery re-association", base, "botsort", True, True),
     ]
     if tuned:
         plan += [
-            ("B2", "fine-tuned + IoU-only tracker", tuned, "iou"),
-            ("B3f", "fine-tuned + ByteTrack", tuned, "bytetrack"),
-            ("B4f", "fine-tuned + BoT-SORT (GMC, no ReID)", tuned, "botsort"),
+            ("B2", "fine-tuned + IoU-only tracker", tuned, "iou", False, False),
+            ("B4f", "fine-tuned + BoT-SORT (GMC, no ReID)", tuned, "botsort", False, False),
+            ("B6f", "fine-tuned + BoT-SORT + ReID gallery", tuned, "botsort", True, True),
         ]
 
+    # The detector is scored once per distinct weights file: mAP does not
+    # depend on the tracker, and re-running it per row would waste minutes to
+    # reproduce the same number.
+    det_cache: dict[str, Any] = {}
     rows = []
-    for row_id, note, weights, tracker in plan:
+    for row_id, note, weights, tracker, use_reid, use_gallery in plan:
         log.info(f"ablation row {row_id}: {note}", extra={"event": "ablate_row", "row": row_id})
-        det = run_detection_eval(cfg, split=args.split, weights=weights,
-                                 limit=args.limit if hasattr(args, "limit") else None,
-                                 with_slices=False)
+        key = str(weights)
+        if key not in det_cache:
+            det_cache[key] = run_detection_eval(cfg, split=args.split, weights=weights,
+                                                with_slices=False)
+        det = det_cache[key]
         if tracker is None:
             rows.append([row_id, note, f"{det.overall.map50:.3f}", f"{det.overall.map50_95:.3f}",
-                         "-", "-", "-", f"{det.timing['fps']:.1f}"])
+                         "-", "-", "-", "-", f"{det.timing['fps']:.1f}"])
             continue
-        pooled, _, fps = _eval_tracker_on(cfg, videos, tracker, weights, args.max_frames)
+        pooled, per_video, fps = _eval_tracker_on(
+            cfg, videos, tracker, weights, args.max_frames,
+            with_reid=use_reid, with_gallery=use_gallery)
+        restores = sum(len(r.restorations) for _, _, r in per_video)
         rows.append([
             row_id, note, f"{det.overall.map50:.3f}", f"{det.overall.map50_95:.3f}",
             f"{pooled.idf1:.3f}" if pooled else "-",
             f"{pooled.hota:.3f}" if pooled else "-",
             pooled.idsw if pooled else "-",
+            restores if use_gallery else "-",
             f"{fps:.1f}",
         ])
 
-    headers = ["#", "Configuration", "mAP50", "mAP50-95", "IDF1", "HOTA", "IDSW", "FPS"]
+    headers = ["#", "Configuration", "mAP50", "mAP50-95", "IDF1", "HOTA", "IDSW",
+               "ID restores", "FPS"]
     table = render_table(headers, rows, markdown=False)
     print("\n" + table)
 
@@ -547,6 +567,16 @@ from .cli_phase3 import (  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows consoles default to cp1252, which cannot encode the "at least"
+    # and "at most" glyphs in the target tables -- and the failure only appears
+    # when stdout is redirected to a file, i.e. exactly when a run is being
+    # captured for a report. Force UTF-8 rather than degrade the tables.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
     args = _build_parser().parse_args(argv)
     try:
         cfg = load_config(args.config)

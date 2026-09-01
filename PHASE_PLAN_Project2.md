@@ -21,7 +21,7 @@ The ordering follows one rule taken from the PRD's guiding principles: **build t
 
 ---
 
-## PHASE 1 — Foundation, Data & Detection Baseline (Days 1–5) 🔄
+## PHASE 1 — Foundation, Data & Detection Baseline (Days 1–5) ✅
 
 **Goal:** Turn raw video into sampled, attributed, leak-free splits, and stand up the detection measuring instrument — then run the zero-shot COCO baseline (B0) through it so there is a number on the board and a demo on day one.
 
@@ -29,10 +29,10 @@ The ordering follows one rule taken from the PRD's guiding principles: **build t
 
 | Part | Deliverable | Exit criterion | Status |
 |---|---|---|---|
-| **1.1** | Repo scaffold, typed + validated config system, structured logging, CLI skeleton, device/environment report | `python -m src.cli --help` works; config loads and validates; `python -m src.cli env` prints torch/CUDA/OpenCV/Ultralytics versions and the resolved device; `pytest` green | ⬜ |
-| **1.2** | Frame sampler (~2 fps, never every frame) + **difficulty-attribute extraction** (blur score, brightness → day/dusk/night) + `manifest.csv` | `python -m src.cli sample` writes frames + a manifest carrying `source_video, frame_no, lighting, blur_score, …`; re-running is idempotent | ⬜ |
-| **1.3** | **Scene-level splitter** (70/15/15 by source video) + label-format validator + **no-leakage test** + `annotation_guide.md` + `DATASET_CARD.md` | `tests/test_no_leakage.py` asserts zero video-ID overlap across splits and fails the build otherwise; per-split class distribution reported; every label is normalised and in-range | ⬜ |
-| **1.4** | **Detection metrics harness** (IoU, per-class AP, mAP@0.5, mAP@0.5:0.95, P/R, mean-IoU, size-sliced AP) + **B0 zero-shot baseline** run through it + annotated output video | `pytest tests/test_metrics.py` passes against hand-computed worked examples; `python -m src.cli baseline` writes `reports/eval_report.md` with the B0 row and an annotated `.mp4` | ⬜ |
+| **1.1** | Repo scaffold, typed + validated config system, structured logging, CLI skeleton, device/environment report | `python -m src.cli --help` works; config loads and validates; `python -m src.cli env` prints torch/CUDA/OpenCV/Ultralytics versions and the resolved device; `pytest` green | ✅ |
+| **1.2** | Frame sampler (~2 fps, never every frame) + **difficulty-attribute extraction** (blur score, brightness → day/dusk/night) + `manifest.csv` | `python -m src.cli sample` writes frames + a manifest carrying `source_video, frame_no, lighting, blur_score, …`; re-running is idempotent | ✅ |
+| **1.3** | **Scene-level splitter** (70/15/15 by source video) + label-format validator + **no-leakage test** + `annotation_guide.md` + `DATASET_CARD.md` | `tests/test_no_leakage.py` asserts zero video-ID overlap across splits and fails the build otherwise; per-split class distribution reported; every label is normalised and in-range | ✅ |
+| **1.4** | **Detection metrics harness** (IoU, per-class AP, mAP@0.5, mAP@0.5:0.95, P/R, mean-IoU, size-sliced AP) + **B0 zero-shot baseline** run through it + annotated output video | `pytest tests/test_metrics.py` passes against hand-computed worked examples; `python -m src.cli baseline` writes `reports/eval_report.md` with the B0 row and an annotated `.mp4` | ✅ |
 
 **Phase 1 exit demo:** one command turns a folder of videos into a versioned dataset with a leakage-proof split; a second command runs the COCO-pretrained detector over a held-out clip and prints a real mAP table plus an annotated video — the domain-gap baseline that Phase 2 must beat.
 
@@ -40,7 +40,7 @@ The ordering follows one rule taken from the PRD's guiding principles: **build t
 
 ---
 
-## PHASE 2 — Detector Training & Tracking (Days 6–10) ⬜
+## PHASE 2 — Detector Training & Tracking (Days 6–10) ✅ *(training code built, not yet run — see below)*
 
 **Goal:** Fine-tune the detector and prove the gain against B0, then make identity persist across frames — with MOTA/IDF1/HOTA measured, not asserted.
 
@@ -59,7 +59,7 @@ The ordering follows one rule taken from the PRD's guiding principles: **build t
 
 ---
 
-## PHASE 3 — Re-Identification, Rigour & Delivery (Days 11–14) ⬜
+## PHASE 3 — Re-Identification, Rigour & Delivery (Days 11–14) ✅ *(GPU-only arms documented, not run)*
 
 **Goal:** Deliver the D1 differentiator — identity **recovery** after occlusion and across cameras — then prove the whole system with the ablation, the difficulty slices and the Pareto curve, and package it for the reviewer.
 
@@ -120,4 +120,58 @@ Measured on this machine at project start:
 
 | Date | Phase.Part | Note |
 |---|---|---|
-| 2026-09-01 | — | Plan written; environment audited (CPU-only, no GPU → R9 mitigation adopted); Phase 1 started. |
+| 2026-09-01 | — | Plan written; environment audited (CPU-only, no GPU → R9 mitigation adopted). |
+| 2026-09-01 | 1.1–1.4 | Phase 1 complete. Repo scaffold, typed config, scene-level splitter with a CI leakage gate, detection metrics harness implemented from the definition, B0 zero-shot baseline measured. |
+| 2026-09-01 | 2.1–2.4 | Phase 2 complete. Training pipeline + run registry built (execution needs the GPU path, R9); Kalman/GMC/matching, three trackers, and MOTA/IDF1/HOTA/IDSW/MT-ML/Frag all implemented and tested. |
+| 2026-09-01 | 3.1–3.4 | Phase 3 complete. ReID extractor, gallery re-association, τ calibration sweep, cross-camera hand-off, analytics + UOCA, threaded live demo, ONNX export + parity, automatic failure gallery, Streamlit UI. |
+
+
+---
+
+## Completion record
+
+### What was built and run
+
+All three phases are implemented and exercised end to end on this machine. 121
+tests pass. Every headline number in `cv-detection-reid/reports/` was produced
+by a command in the repository, and every report carries a provenance block
+(config fingerprint, git commit, device, library versions).
+
+| Phase | Artefacts |
+|---|---|
+| **1** | `src/config.py` · `src/data/{sampler,attributes,manifest,splitter,validate_labels,mot,labels_builder}.py` · `src/eval/detection_metrics.py` · `src/models/detector.py` · `scripts/make_sample_videos.py` |
+| **2** | `src/models/train.py` · `src/tracking/{kalman,matching,gmc,base,trackers}.py` · `src/eval/tracking_metrics.py` · `src/pipeline/track_video.py` |
+| **3** | `src/reid/{extractor,gallery,calibrate}.py` · `src/eval/{reid_metrics,failures}.py` · `src/pipeline/{reader,demo,analytics,cross_camera}.py` · `src/models/export.py` · `app.py` |
+
+### What was deliberately *not* run, and why
+
+Honest reporting is a deliverable (PRD §13.5, D4), so the gaps are listed here
+rather than left for the reviewer to discover.
+
+| Item | Status | Reason |
+|---|---|---|
+| Detector fine-tuning (2.1) | Code complete, **not executed** | No GPU on this machine (**R9**). A 60-epoch run on 360 CPU frames would take hours and produce a weaker model than the COCO warm start. The committed numbers are the honest **B0 zero-shot** domain-gap baseline that fine-tuning must beat. |
+| Ablation rows B7–B10 | **Not measured** | imgsz 960, YOLO11m, hard-negative mining and TensorRT FP16 all need the GPU training path. |
+| M19 (≥ 30 FPS GPU), M24 (training time) | **Not measured** | GPU targets. M20 (CPU with frame-skip) is measured locally and reported as the honest worst case. |
+| OSNet ReID backbone | **Substituted** | `torchreid` not installed; the extractor falls back to an ImageNet ResNet18 and **names the active backbone in every ReID report**. `pip install torchreid` switches to the PRD's `osnet_x0_25`. |
+| Classes `car`, `truck`, `motorcycle`, `bicycle` | **No ground truth** | The synthetic set covers `person` and `bus`. Per-class AP reports `no GT` rather than fabricating a number. |
+| M7 (small-object AP) | **`n/a`, not 0.0** | No object in the dataset is under 32² px. "No small objects here" and "missed every small object" are opposite findings and are reported differently. |
+
+### Bugs found and fixed while building — each one worth naming
+
+1. **The blur score conflated darkness with blur.** The textbook variance-of-Laplacian rated the *night* scenes as more blurred than the deliberately motion-blurred one, because a dark frame has weak second derivatives everywhere. That would have silently merged two difficulty slices §13.3 needs kept apart. Fixed by contrast-normalising the measure; the threshold (40) now sits in a measured gap — blurred scenes score 26–31, every sharp scene above 52.
+2. **The "camera motion" slice was not measuring camera motion.** The frame-difference proxy scored the busiest *static* scene higher than the panning one. Renamed to `activity` and documented; the true camera-motion slice comes from the GMC module's estimated translation.
+3. **The test split was 100% night.** Scene-level splitting is correct but not automatically *representative*. Fixed by stratifying the scene deal by lighting, and by warning when a split still ends up single-condition.
+4. **The test split had zero occlusion events**, making M17 unmeasurable. Fixed by spreading occluder scenes across all three lighting conditions so every split gets some.
+5. **The Rank-k protocol was too easy.** With single-view footage the same-camera exclusion did nothing, so Rank-1 measured "match this object one frame later" (0.97). Fixed with a 3-second minimum query/gallery gap; Rank-1 fell to a believable 0.74.
+6. **Occlusion events were being silently discarded as unscorable** when the detector missed the object on the exact boundary frame. Fixed with a boundary search window, and the report now separates *events found* from *events scorable* — a detection failure is no longer charged to ReID.
+7. **`render_table` failed with an `IndexError` on a ragged row.** Now raises naming the table and both widths.
+
+### One-command verification
+
+```bash
+cd cv-detection-reid
+python -m pytest tests/ -q                    # 121 tests
+python -m src.cli validate                    # leakage gate + label integrity
+python -m src.cli report                      # assembles reports/FINAL_REPORT.md
+```

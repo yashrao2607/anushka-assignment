@@ -1,0 +1,23 @@
+{
+  "overall_M18": 1.0,
+  "pairs": [
+    {
+      "cam_a": "scene06_camA.mp4",
+      "cam_b": "scene06_camB.mp4",
+      "M18_cross_camera_match_rate": 1.0,
+      "identities_scored": 4,
+      "identities_matched": 4,
+      "tau_reid": 0.3,
+      "reid_backend": "resnet18"
+    },
+    {
+      "cam_a": "scene16_camA.mp4",
+      "cam_b": "scene16_camB.mp4",
+      "M18_cross_camera_match_rate": 1.0,
+      "identities_scored": 4,
+      "identities_matched": 4,
+      "tau_reid": 0.3,
+      "reid_backend": "resnet18"
+    }
+  ]
+}
