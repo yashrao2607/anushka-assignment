@@ -1,13 +1,13 @@
 # Failure Gallery (PRD §13.5)
 
-*Generated 2026-09-01T06:35:58+00:00*
+*Generated 2026-09-01T06:38:12+00:00*
 
 ## Provenance
 
 | Key                | Value        |
 |--------------------|--------------|
 | config fingerprint | f0a93d2104cf |
-| git commit         | 8194df7      |
+| git commit         | 9ebe158      |
 | split              | test         |
 | weights            | yolo11n.pt   |
 

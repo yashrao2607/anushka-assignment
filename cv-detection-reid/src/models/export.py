@@ -72,6 +72,18 @@ def export_model(
                     extra={"event": "half_export_skipped"})
         half = False
 
+    if simplify:
+        # Ultralytics tries to pip-install onnxslim on demand, which stalls the
+        # run behind a network retry loop on a locked-down interpreter. The
+        # simplifier is an optimisation, not a correctness requirement, so it is
+        # skipped when unavailable rather than allowed to block the export.
+        try:
+            import onnxslim  # noqa: F401
+        except ImportError:
+            log.warning("onnxslim not installed; exporting without graph simplification",
+                        extra={"event": "simplify_skipped"})
+            simplify = False
+
     try:
         model = YOLO(src)
         out = model.export(

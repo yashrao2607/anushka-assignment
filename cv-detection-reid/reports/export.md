@@ -1,13 +1,13 @@
 # Export & Parity (PRD EXP-8, NFR-6, M22)
 
-*Generated 2026-09-01T06:37:58+00:00*
+*Generated 2026-09-01T06:39:34+00:00*
 
 ## Provenance
 
 | Key                | Value        |
 |--------------------|--------------|
 | config fingerprint | f0a93d2104cf |
-| git commit         | b3ee0c5      |
+| git commit         | 9ebe158      |
 
 ## Result
 
@@ -24,9 +24,9 @@
 | absolute delta   | 0.0326       |
 | NFR-6 tolerance  | 0.01         |
 | NFR-6 verdict    | FAIL         |
-| PyTorch FPS      | 3.26         |
-| exported FPS     | 5.62         |
-| speedup          | 1.72         |
+| PyTorch FPS      | 6.83         |
+| exported FPS     | 11.91        |
+| speedup          | 1.74         |
 
 ## Note
 

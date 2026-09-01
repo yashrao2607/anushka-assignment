@@ -24,9 +24,9 @@
     "delta": 0.0326,
     "parity_ok": false,
     "timing": {
-      "pytorch_fps": 3.26,
-      "exported_fps": 5.62,
-      "speedup": 1.72
+      "pytorch_fps": 6.83,
+      "exported_fps": 11.91,
+      "speedup": 1.74
     }
   }
 }
