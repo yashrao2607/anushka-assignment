@@ -1,0 +1,840 @@
+{
+  "label": "B0",
+  "split": "test",
+  "overall": {
+    "map50": 0.5867,
+    "map50_95": 0.5039,
+    "precision": 0.391,
+    "recall": 0.7093,
+    "f1": 0.5041,
+    "mean_iou": 0.897,
+    "per_class_ap50": {
+      "person": 0.3671,
+      "bus": 0.8063
+    },
+    "per_class_ap50_95": {
+      "person": 0.2635,
+      "bus": 0.7444
+    },
+    "size_ap50": {
+      "small": null,
+      "medium": 0.3568,
+      "large": 0.4034
+    },
+    "n_images": 60,
+    "n_gt": 172,
+    "n_pred": 2892,
+    "tp": 122,
+    "fp": 190,
+    "fn": 50,
+    "support": {
+      "person": 96,
+      "car": 0,
+      "motorcycle": 0,
+      "bus": 76,
+      "truck": 0,
+      "bicycle": 0
+    },
+    "confusion": {
+      "person": {
+        "person": 68,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 0,
+        "truck": 0,
+        "bicycle": 0,
+        "background": 28
+      },
+      "car": {
+        "person": 0,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 0,
+        "truck": 0,
+        "bicycle": 0,
+        "background": 0
+      },
+      "motorcycle": {
+        "person": 0,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 0,
+        "truck": 0,
+        "bicycle": 0,
+        "background": 0
+      },
+      "bus": {
+        "person": 0,
+        "car": 11,
+        "motorcycle": 0,
+        "bus": 51,
+        "truck": 3,
+        "bicycle": 0,
+        "background": 11
+      },
+      "truck": {
+        "person": 0,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 0,
+        "truck": 0,
+        "bicycle": 0,
+        "background": 0
+      },
+      "bicycle": {
+        "person": 0,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 0,
+        "truck": 0,
+        "bicycle": 0,
+        "background": 0
+      },
+      "background": {
+        "person": 172,
+        "car": 2,
+        "motorcycle": 0,
+        "bus": 3,
+        "truck": 2,
+        "bicycle": 0,
+        "background": 0
+      }
+    }
+  },
+  "slices": {
+    "activity:high": {
+      "map50": 0.5486,
+      "map50_95": 0.5127,
+      "precision": 0.3467,
+      "recall": 0.7879,
+      "f1": 0.4815,
+      "mean_iou": 0.9353,
+      "per_class_ap50": {
+        "person": 0.0994,
+        "bus": 0.9978
+      },
+      "per_class_ap50_95": {
+        "person": 0.0568,
+        "bus": 0.9686
+      },
+      "size_ap50": {
+        "small": null,
+        "medium": 0.1025,
+        "large": 0.9978
+      },
+      "n_images": 11,
+      "n_gt": 33,
+      "n_pred": 707,
+      "tp": 26,
+      "fp": 49,
+      "fn": 7,
+      "support": {
+        "person": 11,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 22,
+        "truck": 0,
+        "bicycle": 0
+      },
+      "confusion": {
+        "person": {
+          "person": 6,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 5
+        },
+        "car": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "motorcycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bus": {
+          "person": 0,
+          "car": 4,
+          "motorcycle": 0,
+          "bus": 18,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "truck": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bicycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "background": {
+          "person": 43,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 2,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 0
+        }
+      }
+    },
+    "activity:low": {
+      "map50": 0.6025,
+      "map50_95": 0.4991,
+      "precision": 0.4051,
+      "recall": 0.6906,
+      "f1": 0.5107,
+      "mean_iou": 0.8866,
+      "per_class_ap50": {
+        "person": 0.4716,
+        "bus": 0.7334
+      },
+      "per_class_ap50_95": {
+        "person": 0.3438,
+        "bus": 0.6544
+      },
+      "size_ap50": {
+        "small": null,
+        "medium": 0.46,
+        "large": 0.3669
+      },
+      "n_images": 49,
+      "n_gt": 139,
+      "n_pred": 2185,
+      "tp": 96,
+      "fp": 141,
+      "fn": 43,
+      "support": {
+        "person": 85,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 54,
+        "truck": 0,
+        "bicycle": 0
+      },
+      "confusion": {
+        "person": {
+          "person": 62,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 23
+        },
+        "car": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "motorcycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bus": {
+          "person": 0,
+          "car": 7,
+          "motorcycle": 0,
+          "bus": 33,
+          "truck": 3,
+          "bicycle": 0,
+          "background": 11
+        },
+        "truck": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bicycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "background": {
+          "person": 129,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 1,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 0
+        }
+      }
+    },
+    "blur:blurred": {
+      "map50": 0.4315,
+      "map50_95": 0.3693,
+      "precision": 0.2926,
+      "recall": 0.5446,
+      "f1": 0.3807,
+      "mean_iou": 0.9103,
+      "per_class_ap50": {
+        "person": 0.1086,
+        "bus": 0.7544
+      },
+      "per_class_ap50_95": {
+        "person": 0.0661,
+        "bus": 0.6725
+      },
+      "size_ap50": {
+        "small": null,
+        "medium": 0.1119,
+        "large": 0.7544
+      },
+      "n_images": 30,
+      "n_gt": 101,
+      "n_pred": 1896,
+      "tp": 55,
+      "fp": 133,
+      "fn": 46,
+      "support": {
+        "person": 46,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 55,
+        "truck": 0,
+        "bicycle": 0
+      },
+      "confusion": {
+        "person": {
+          "person": 19,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 27
+        },
+        "car": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "motorcycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bus": {
+          "person": 0,
+          "car": 10,
+          "motorcycle": 0,
+          "bus": 34,
+          "truck": 2,
+          "bicycle": 0,
+          "background": 9
+        },
+        "truck": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bicycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "background": {
+          "person": 119,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 2,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 0
+        }
+      }
+    },
+    "blur:sharp": {
+      "map50": 0.8292,
+      "map50_95": 0.7314,
+      "precision": 0.5403,
+      "recall": 0.9437,
+      "f1": 0.6872,
+      "mean_iou": 0.8861,
+      "per_class_ap50": {
+        "person": 0.708,
+        "bus": 0.9505
+      },
+      "per_class_ap50_95": {
+        "person": 0.5221,
+        "bus": 0.9406
+      },
+      "size_ap50": {
+        "small": null,
+        "medium": 0.6945,
+        "large": 0.4752
+      },
+      "n_images": 30,
+      "n_gt": 71,
+      "n_pred": 996,
+      "tp": 67,
+      "fp": 57,
+      "fn": 4,
+      "support": {
+        "person": 50,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 21,
+        "truck": 0,
+        "bicycle": 0
+      },
+      "confusion": {
+        "person": {
+          "person": 49,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 1
+        },
+        "car": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "motorcycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bus": {
+          "person": 0,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 17,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 2
+        },
+        "truck": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bicycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "background": {
+          "person": 53,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 1,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 0
+        }
+      }
+    },
+    "crowded:<=15 objects": {
+      "map50": 0.5867,
+      "map50_95": 0.5039,
+      "precision": 0.391,
+      "recall": 0.7093,
+      "f1": 0.5041,
+      "mean_iou": 0.897,
+      "per_class_ap50": {
+        "person": 0.3671,
+        "bus": 0.8063
+      },
+      "per_class_ap50_95": {
+        "person": 0.2635,
+        "bus": 0.7444
+      },
+      "size_ap50": {
+        "small": null,
+        "medium": 0.3568,
+        "large": 0.4034
+      },
+      "n_images": 60,
+      "n_gt": 172,
+      "n_pred": 2892,
+      "tp": 122,
+      "fp": 190,
+      "fn": 50,
+      "support": {
+        "person": 96,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 76,
+        "truck": 0,
+        "bicycle": 0
+      },
+      "confusion": {
+        "person": {
+          "person": 68,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 28
+        },
+        "car": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "motorcycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bus": {
+          "person": 0,
+          "car": 11,
+          "motorcycle": 0,
+          "bus": 51,
+          "truck": 3,
+          "bicycle": 0,
+          "background": 11
+        },
+        "truck": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bicycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "background": {
+          "person": 172,
+          "car": 2,
+          "motorcycle": 0,
+          "bus": 3,
+          "truck": 2,
+          "bicycle": 0,
+          "background": 0
+        }
+      }
+    },
+    "lighting:day": {
+      "map50": 0.4315,
+      "map50_95": 0.3693,
+      "precision": 0.2926,
+      "recall": 0.5446,
+      "f1": 0.3807,
+      "mean_iou": 0.9103,
+      "per_class_ap50": {
+        "person": 0.1086,
+        "bus": 0.7544
+      },
+      "per_class_ap50_95": {
+        "person": 0.0661,
+        "bus": 0.6725
+      },
+      "size_ap50": {
+        "small": null,
+        "medium": 0.1119,
+        "large": 0.7544
+      },
+      "n_images": 30,
+      "n_gt": 101,
+      "n_pred": 1896,
+      "tp": 55,
+      "fp": 133,
+      "fn": 46,
+      "support": {
+        "person": 46,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 55,
+        "truck": 0,
+        "bicycle": 0
+      },
+      "confusion": {
+        "person": {
+          "person": 19,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 27
+        },
+        "car": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "motorcycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bus": {
+          "person": 0,
+          "car": 10,
+          "motorcycle": 0,
+          "bus": 34,
+          "truck": 2,
+          "bicycle": 0,
+          "background": 9
+        },
+        "truck": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bicycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "background": {
+          "person": 119,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 2,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 0
+        }
+      }
+    },
+    "lighting:night": {
+      "map50": 0.8292,
+      "map50_95": 0.7314,
+      "precision": 0.5403,
+      "recall": 0.9437,
+      "f1": 0.6872,
+      "mean_iou": 0.8861,
+      "per_class_ap50": {
+        "person": 0.708,
+        "bus": 0.9505
+      },
+      "per_class_ap50_95": {
+        "person": 0.5221,
+        "bus": 0.9406
+      },
+      "size_ap50": {
+        "small": null,
+        "medium": 0.6945,
+        "large": 0.4752
+      },
+      "n_images": 30,
+      "n_gt": 71,
+      "n_pred": 996,
+      "tp": 67,
+      "fp": 57,
+      "fn": 4,
+      "support": {
+        "person": 50,
+        "car": 0,
+        "motorcycle": 0,
+        "bus": 21,
+        "truck": 0,
+        "bicycle": 0
+      },
+      "confusion": {
+        "person": {
+          "person": 49,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 1
+        },
+        "car": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "motorcycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bus": {
+          "person": 0,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 17,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 2
+        },
+        "truck": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "bicycle": {
+          "person": 0,
+          "car": 0,
+          "motorcycle": 0,
+          "bus": 0,
+          "truck": 0,
+          "bicycle": 0,
+          "background": 0
+        },
+        "background": {
+          "person": 53,
+          "car": 1,
+          "motorcycle": 0,
+          "bus": 1,
+          "truck": 1,
+          "bicycle": 0,
+          "background": 0
+        }
+      }
+    }
+  },
+  "detector": {
+    "weights": "yolo11n.pt",
+    "device": "cpu",
+    "device_name": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "half": false,
+    "model_classes": 80,
+    "coco_pretrained": true,
+    "mapped_classes": 6,
+    "imgsz": 640,
+    "conf": 0.25,
+    "iou": 0.45
+  },
+  "timing": {
+    "frames": 60,
+    "fps": 10.87,
+    "latency_p50_ms": 57.95,
+    "latency_p95_ms": 87.21,
+    "latency_mean_ms": 92.01
+  },
+  "provenance": {
+    "config fingerprint": "f0a93d2104cf",
+    "git commit": "a3fdbe1",
+    "split": "test",
+    "weights": "yolo11n.pt",
+    "device": "cpu",
+    "device_name": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "half": false,
+    "model_classes": 80,
+    "coco_pretrained": true,
+    "mapped_classes": 6,
+    "imgsz": 640,
+    "conf": 0.25,
+    "iou": 0.45
+  }
+}

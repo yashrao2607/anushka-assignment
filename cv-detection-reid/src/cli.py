@@ -253,7 +253,9 @@ def cmd_eval_det(cfg, args) -> int:
          targets_table(run.headline(), DETECTION_TARGETS, markdown=True)),
         ("Per-class AP (M6)", per_class_table(o.per_class_ap50, o.per_class_ap50_95, o.support)),
         ("Object-size bands (M7)", render_table(
-            ["Band", "AP@0.5"], [[k, f"{v:.4f}"] for k, v in o.size_ap50.items()], markdown=True)),
+            ["Band", "AP@0.5"],
+            [[k, "n/a (no GT in band)" if v is None else f"{v:.4f}"]
+             for k, v in o.size_ap50.items()], markdown=True)),
         ("Difficulty slices (PRD §13.3)", slice_table({k: v.as_dict() for k, v in run.slices.items()})),
         ("Confusion matrix", confusion_table(o.confusion)),
         ("Counts", render_table(["Key", "Value"], [

@@ -37,9 +37,11 @@ sampling:
   max_frames_per_video: 400
   image_format: .jpg
   jpeg_quality: 92
-  # A frame whose variance-of-Laplacian is below this is unusably blurred and
-  # is dropped rather than labelled. Logged, never silently discarded.
-  min_blur_score: 8.0
+  # A frame whose contrast-normalised sharpness is below this is unusably
+  # blurred and is dropped rather than labelled. Logged, never silently
+  # discarded. See attributes.normalised_blur_score for why the score is
+  # normalised: the raw Laplacian variance rated dark frames as blurred.
+  min_blur_score: 5.0
 
 attributes:
   # Thresholds that bucket a frame's mean V-channel value into a lighting
@@ -47,8 +49,10 @@ attributes:
   # are captured at sampling time -- they cannot be reconstructed later.
   lighting_night_below: 60.0
   lighting_dusk_below: 110.0
-  # Variance-of-Laplacian below this marks the frame as motion-blurred.
-  blur_hard_below: 60.0
+  # Normalised sharpness below this marks the frame as motion-blurred.
+  # Measured, not guessed: the blurred scenes score 26-31 and every sharp
+  # scene scores above 52, so the boundary sits in the empty gap between them.
+  blur_hard_below: 40.0
   # A frame with more than this many objects is a "crowded" association test.
   crowded_object_count: 15
 

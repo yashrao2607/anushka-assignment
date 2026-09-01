@@ -45,14 +45,34 @@ class FrameAttributes:
 
 
 def variance_of_laplacian(gray: np.ndarray) -> float:
-    """Standard focus measure: the variance of the Laplacian response.
-
-    A sharp image has strong second derivatives at edges and therefore a high
-    variance; a motion-blurred or defocused image has its high frequencies
-    suppressed and scores low. Reported in absolute units so the threshold in
-    the config is auditable rather than adaptive-and-mysterious.
-    """
+    """Raw focus measure: the variance of the Laplacian response."""
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+
+def normalised_blur_score(gray: np.ndarray) -> float:
+    """Contrast-normalised sharpness: `100 * var(Laplacian) / var(gray)`.
+
+    The raw variance of the Laplacian is the textbook focus measure, and using
+    it here would have been a bug worth naming. Measured on this dataset, the
+    *night* scenes scored lower than the deliberately motion-blurred one --
+    because a dark frame has weak second derivatives everywhere, blurred or
+    not. The raw measure conflates "out of focus" with "badly lit", which
+    would have quietly merged two difficulty slices that PRD 13.3 needs kept
+    apart.
+
+    Dividing by the image's own variance removes the global contrast scaling
+    and leaves a ratio that answers the intended question: how much of this
+    frame's energy is in its high frequencies? On this dataset the blurred
+    scenes land near 26-31 and every sharp scene above 52, so the threshold in
+    the config sits between them and is a measured value, not a guess.
+
+    The remaining known confound is stated rather than hidden: heavy sensor
+    noise also lives in the high frequencies, so a noisy night frame reads as
+    very "sharp". That is the correct answer to the question being asked -- it
+    is not blurred -- and lighting is a separate attribute anyway.
+    """
+    lap = cv2.Laplacian(gray, cv2.CV_64F).var()
+    return float(100.0 * lap / max(float(np.var(gray.astype(np.float64))), 1.0))
 
 
 def classify_lighting(brightness: float, cfg: AttributesConfig) -> str:
@@ -94,7 +114,7 @@ def compute_attributes(
     value = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)[:, :, 2]
 
     brightness = float(np.mean(value))
-    blur = variance_of_laplacian(gray)
+    blur = normalised_blur_score(gray)
     attrs = FrameAttributes(
         brightness=round(brightness, 2),
         contrast=round(float(np.std(gray)), 2),

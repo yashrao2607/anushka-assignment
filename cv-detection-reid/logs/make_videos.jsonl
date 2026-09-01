@@ -12,3 +12,4 @@
 {"ts": "2026-09-01T05:53:21+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene09_camA: 450 frames -> scene09_camA.mp4, gt -> scene09_camA_gt.txt [dusk, 5 actors, occluder]"}
 {"ts": "2026-09-01T05:54:22+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene10_camA: 450 frames -> scene10_camA.mp4, gt -> scene10_camA_gt.txt [night, 4 actors, pan]"}
 {"ts": "2026-09-01T05:54:28+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene11_camA: 450 frames -> scene11_camA.mp4, gt -> scene11_camA_gt.txt [day, 9 actors, occluder]"}
+{"ts": "2026-09-01T05:54:35+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene12_camA: 450 frames -> scene12_camA.mp4, gt -> scene12_camA_gt.txt [dusk, 4 actors, pan, blur]"}

@@ -128,8 +128,10 @@ class Detector:
             imgsz=imgsz or self.cfg.detection.imgsz,
             max_det=self.cfg.detection.max_det,
             device=self.device.device,
-            half=self.half,
             verbose=False,
+            # Ultralytics deprecated `half`; only pass it when it is actually
+            # requested so a CPU run does not emit a warning per frame.
+            **({"half": True} if self.half else {}),
         )
         elapsed = (time.perf_counter() - t0) * 1000.0
         self.stats.frames += 1

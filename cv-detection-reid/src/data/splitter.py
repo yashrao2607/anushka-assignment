@@ -66,18 +66,55 @@ def group_by_scene(rows: Sequence[ManifestRow]) -> dict[str, list[ManifestRow]]:
     return dict(groups)
 
 
+def _dominant(rows: Sequence[ManifestRow], attr: str) -> str:
+    return Counter(getattr(r, attr) for r in rows).most_common(1)[0][0] if rows else "unknown"
+
+
+def _stratified_order(groups: dict[str, list[ManifestRow]], seed: int) -> list[str]:
+    """Order scenes so consecutive picks rotate through lighting conditions.
+
+    Scene-level splitting is *correct* but not automatically *representative*:
+    with a handful of scenes, plain largest-first greedy can hand the whole
+    test split one lighting condition, and every headline number then describes
+    that condition while being labelled an average.
+
+    Interleaving by condition is stratified group splitting -- standard
+    practice, and importantly it stratifies on an attribute recorded at
+    sampling time, never on model performance. Choosing a test set by how well
+    the model scores on it would be exactly the sin this guards against.
+    """
+    by_condition: dict[str, list[str]] = defaultdict(list)
+    for scene, rows in groups.items():
+        by_condition[_dominant(rows, "lighting")].append(scene)
+
+    rng = random.Random(seed)
+    for bucket in by_condition.values():
+        rng.shuffle(bucket)
+        bucket.sort(key=lambda s: len(groups[s]), reverse=True)
+
+    # Rarest condition first: the scarce buckets are the ones that starve a
+    # split if they are dealt last.
+    buckets = sorted(by_condition.values(), key=len)
+    order: list[str] = []
+    idx = 0
+    while any(idx < len(b) for b in buckets):
+        for bucket in buckets:
+            if idx < len(bucket):
+                order.append(bucket[idx])
+        idx += 1
+    return order
+
+
 def assign_scenes(
     groups: dict[str, list[ManifestRow]],
     ratios: dict[str, float],
     seed: int = 42,
 ) -> dict[str, str]:
-    """Greedy largest-scene-first assignment to the split with the biggest deficit.
+    """Greedy assignment to the split with the biggest deficit, stratified by lighting.
 
     Whole scenes are indivisible, so exact ratios are generally unreachable.
-    Placing the largest scene first minimises the worst-case imbalance -- the
-    same argument as longest-processing-time-first bin packing. Ties break on a
-    seeded shuffle so the result is reproducible (NFR-10) without being an
-    artefact of dict ordering.
+    Ties break on a seeded shuffle so the result is reproducible (NFR-10)
+    without being an artefact of dict ordering.
     """
     total = sum(len(v) for v in groups.values())
     if total == 0:
@@ -87,10 +124,7 @@ def assign_scenes(
     current = {s: 0 for s in SPLITS}
     assignment: dict[str, str] = {}
 
-    scene_ids = list(groups)
-    random.Random(seed).shuffle(scene_ids)
-    # Largest first; the shuffle above only decides ties.
-    scene_ids.sort(key=lambda s: len(groups[s]), reverse=True)
+    scene_ids = _stratified_order(groups, seed)
 
     for scene in scene_ids:
         deficit = {s: targets[s] - current[s] for s in SPLITS}

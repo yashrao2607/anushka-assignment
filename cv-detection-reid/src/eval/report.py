@@ -61,7 +61,12 @@ def targets_table(values: Mapping[str, float], targets: Sequence[tuple[str, str,
             continue
         v = values[mid]
         arrow = "≥" if direction == "ge" else "≤"
-        rows.append([mid, name, _fmt(v), f"{arrow} {target}", verdict(v, target, direction)])
+        if v is None:
+            # Not measurable on this split (e.g. no small objects present).
+            # Printed as such, never as a 0.0 that would read as a failure.
+            rows.append([mid, name, "n/a", f"{arrow} {target}", "NOT MEASURED"])
+        else:
+            rows.append([mid, name, _fmt(v), f"{arrow} {target}", verdict(v, target, direction)])
     return render_table(["ID", "Metric", "Measured", "Target", "Verdict"], rows, markdown=markdown)
 
 

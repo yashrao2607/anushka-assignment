@@ -51,10 +51,14 @@ def build_slices(rows: Sequence[ManifestRow], cfg: Config) -> dict[str, list[str
             s["crowded:>15 objects"].append(r.image_id)
         else:
             s["crowded:<=15 objects"].append(r.image_id)
-        # `motion_score` is the frame-to-frame difference between *sampled*
-        # frames, so a high value means the scene or the camera moved a lot
-        # between samples -- the dashcam case where GMC earns its place.
-        s["motion:high" if r.motion_score >= 25.0 else "motion:low"].append(r.image_id)
+        # Named `activity`, not `camera motion`. The score is a frame-to-frame
+        # absolute difference, which a panning camera and a crowd of moving
+        # objects both raise -- measured on this dataset, the busiest static
+        # scene outscored the panning one. The true camera-motion slice comes
+        # from the GMC module's estimated translation in Phase 2.3; calling
+        # this proxy "camera motion" would have mislabelled the slice that
+        # exists to prove GMC earns its place.
+        s["activity:high" if r.motion_score >= 10.0 else "activity:low"].append(r.image_id)
     # Drop degenerate slices; a slice with one image is noise, not evidence.
     return {k: v for k, v in sorted(s.items()) if len(v) >= 3}
 

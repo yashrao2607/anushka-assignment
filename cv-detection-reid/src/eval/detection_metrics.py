@@ -359,7 +359,10 @@ def evaluate_detections(
             cls_preds = [p for p in preds_by_cls.get(cls_id, []) if lo <= p.area < hi]
             match = match_predictions(cls_preds, in_band, primary_iou)
             band_aps.append(average_precision(*precision_recall_curve(match), recall_points))
-        m.size_ap50[band] = round(float(np.mean(band_aps)), 4) if band_aps else 0.0
+        # An empty band reports None, never 0.0: "no small objects in this
+        # split" and "the detector missed every small object" are opposite
+        # findings and a zero would print the second while meaning the first.
+        m.size_ap50[band] = round(float(np.mean(band_aps)), 4) if band_aps else None
 
     m.confusion = build_confusion(preds, gts, class_names, primary_iou, operating_conf)
     return m

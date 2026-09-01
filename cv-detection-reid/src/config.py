@@ -62,14 +62,14 @@ class SamplingConfig:
     max_frames_per_video: int = 400
     image_format: str = ".jpg"
     jpeg_quality: int = 92
-    min_blur_score: float = 8.0
+    min_blur_score: float = 5.0
 
 
 @dataclass(frozen=True)
 class AttributesConfig:
     lighting_night_below: float = 60.0
     lighting_dusk_below: float = 110.0
-    blur_hard_below: float = 60.0
+    blur_hard_below: float = 40.0
     crowded_object_count: int = 15
 
 
