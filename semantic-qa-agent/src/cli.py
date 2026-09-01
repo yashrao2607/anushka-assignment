@@ -305,7 +305,20 @@ def cmd_serve(args, cfg) -> int:
     return 0
 
 
+def _force_utf8_stdout() -> None:
+    """Windows consoles default to cp1252, which cannot encode characters an LLM
+    routinely emits (non-breaking hyphens, curly quotes, en dashes). Without this
+    a perfectly good answer crashes on print. Reconfigure rather than strip, so
+    the text stays intact wherever the terminal can render it."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_stdout()
     args = _build_parser().parse_args(argv)
     try:
         cfg = load_config(

@@ -75,7 +75,7 @@ class Answerer:
         gcfg = cfg.extra.get("generation", {})
         gatecfg = cfg.extra.get("gate", {})
 
-        self.model = gcfg.get("model", "llama-3.3-70b-versatile")
+        self.model = gcfg.get("model", "openai/gpt-oss-120b")
         self.max_words = int(gcfg.get("max_answer_words", 150))
         self.max_context_tokens = int(gcfg.get("max_context_tokens", 3000))
         self.threshold = (

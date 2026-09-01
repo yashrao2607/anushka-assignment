@@ -1,0 +1,110 @@
+# =============================================================================
+# cv-detection-reid -- single source of truth for every tunable knob.
+# PRD 9.7: "All hyperparameters live in configs/*.yaml." No magic numbers in src.
+#
+# Phase 1 uses `paths`, `dataset`, `sampling`, `attributes`, `splits`,
+# `detection` and `eval`. The `tracking` and `reid` sections are declared now
+# so Phase 2/3 components have a stable contract to load against.
+# =============================================================================
+
+project: cv-detection-reid
+seed: 42
+
+paths:
+  raw_videos_dir: data/raw_videos
+  frames_dir: data/frames
+  labels_dir: data/labels
+  splits_dir: data/splits
+  sprites_dir: data/sprites
+  manifest: data/manifest.csv
+  reports_dir: reports
+  runs_dir: runs
+  logs_dir: logs
+
+dataset:
+  # PRD Appendix C. Index order IS the class id -- never reorder without
+  # remapping every label file.
+  classes: [person, car, motorcycle, bus, truck, bicycle]
+  # COCO class ids for the same concepts, used to map a COCO-pretrained
+  # detector's output onto our label space for the B0 zero-shot baseline.
+  coco_id_map: {0: person, 2: car, 3: motorcycle, 5: bus, 7: truck, 1: bicycle}
+
+sampling:
+  # PRD 7.1: "sample at ~2 fps from source video, never every frame."
+  # Consecutive frames are ~99% redundant; annotating them wastes labelling
+  # budget and inflates apparent dataset size without adding information.
+  target_fps: 2.0
+  max_frames_per_video: 400
+  image_format: .jpg
+  jpeg_quality: 92
+  # A frame whose variance-of-Laplacian is below this is unusably blurred and
+  # is dropped rather than labelled. Logged, never silently discarded.
+  min_blur_score: 8.0
+
+attributes:
+  # Thresholds that bucket a frame's mean V-channel value into a lighting
+  # class. These drive the difficulty-sliced evaluation (PRD 13.3), so they
+  # are captured at sampling time -- they cannot be reconstructed later.
+  lighting_night_below: 60.0
+  lighting_dusk_below: 110.0
+  # Variance-of-Laplacian below this marks the frame as motion-blurred.
+  blur_hard_below: 60.0
+  # A frame with more than this many objects is a "crowded" association test.
+  crowded_object_count: 15
+
+splits:
+  # PRD 7.3 + Principle 4. Ratios are targets; the splitter assigns whole
+  # videos, so realised ratios differ slightly and the report states both.
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  # by_video is the only correct mode. `random` exists purely so the leakage
+  # test can prove it fails -- it is never used to produce a reported number.
+  mode: by_video
+
+detection:
+  weights: yolo11n.pt          # B0 warm start; Phase 2 overrides with runs/best.pt
+  imgsz: 640
+  conf: 0.25                   # PRD 9.1 operating point, swept in EXP-10
+  iou: 0.45                    # class-wise NMS threshold
+  max_det: 300
+  device: auto                 # auto -> cuda | mps | cpu
+  half: false                  # FP16 only meaningful on CUDA
+  frame_skip: 1                # >1 enables the CPU-fallback path (M20)
+
+eval:
+  # PRD 4.2. COCO-style: AP is integrated over 101 recall points, and
+  # mAP@0.5:0.95 averages ten IoU thresholds from 0.50 to 0.95 step 0.05.
+  iou_thresholds: [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+  primary_iou: 0.5
+  recall_points: 101
+  # PRD M7 / COCO area bands, in pixels^2.
+  small_area_max: 1024         # 32^2
+  medium_area_max: 9216        # 96^2
+  # Confidence at which P/R/mean-IoU (M3/M4/M5) are reported.
+  operating_conf: 0.25
+
+# ---- Declared now, implemented in Phase 2 (PRD 9.3, Appendix B) -------------
+tracking:
+  tracker_type: botsort        # botsort | bytetrack | iou
+  track_high_thresh: 0.5
+  track_low_thresh: 0.1
+  new_track_thresh: 0.6
+  track_buffer: 30             # frames an identity survives unseen (EXP-9)
+  match_thresh: 0.8
+  min_hits: 3
+  gmc_method: sparseOptFlow
+  appearance_weight: 0.5       # lambda in C = l*d_IoU + (1-l)*d_cosine
+
+# ---- Declared now, implemented in Phase 3 (PRD 9.2, 9.4) --------------------
+reid:
+  enabled: true
+  model: osnet_x0_25
+  embedding_dim: 512
+  crop_size: [256, 128]        # h, w
+  min_crop_wh: [16, 32]        # crops smaller than this fall back to motion-only
+  embedding_ema: 0.9
+  gallery:
+    threshold: 0.35            # tau_reid -- calibrated in 3.1, never guessed
+    ttl_frames: 300
+    class_gated: true          # a car is never re-identified as a person

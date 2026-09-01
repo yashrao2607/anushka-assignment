@@ -69,7 +69,7 @@ class GroqClient:
     def __init__(
         self,
         root: Path,
-        model: str = "llama-3.3-70b-versatile",
+        model: str = "openai/gpt-oss-120b",
         temperature: float = 0.0,
         max_tokens: int = 512,
         cache_path: Path | None = None,
@@ -101,9 +101,11 @@ class GroqClient:
     def available(self) -> bool:
         return bool(self.api_key)
 
-    def _key(self, system: str, user: str, model: str) -> str:
+    def _key(self, system: str, user: str, model: str,
+             json_mode: bool = False, reasoning_effort: str | None = None) -> str:
         blob = json.dumps(
-            {"m": model, "t": self.temperature, "s": system, "u": user},
+            {"m": model, "t": self.temperature, "s": system, "u": user,
+             "j": json_mode, "r": reasoning_effort},
             sort_keys=True,
         )
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()
@@ -120,11 +122,13 @@ class GroqClient:
         model: str | None = None,
         max_tokens: int | None = None,
         use_cache: bool = True,
+        json_mode: bool = False,
+        reasoning_effort: str | None = None,
     ) -> str:
         """Return the assistant message, from cache when possible."""
         log = get_logger()
         model = model or self.model
-        key = self._key(system, user, model)
+        key = self._key(system, user, model, json_mode, reasoning_effort)
 
         if use_cache and key in self._cache:
             self.usage.calls_cached += 1
@@ -157,6 +161,17 @@ class GroqClient:
             "top_p": 1,
             "stream": False,
         }
+        if json_mode:
+            # Constrained decoding: the model cannot emit prose around the JSON,
+            # which removes an entire class of parse failure rather than trying
+            # to regex around it.
+            payload["response_format"] = {"type": "json_object"}
+        if reasoning_effort:
+            # gpt-oss models reason before answering. For a binary support
+            # judgement that reasoning is pure token cost, and on a small
+            # max_tokens budget it can consume the whole allowance and truncate
+            # the actual answer.
+            payload["reasoning_effort"] = reasoning_effort
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",

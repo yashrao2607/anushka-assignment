@@ -70,12 +70,12 @@ rerank:
   max_candidates: 40
 
 gate:
-  refusal_threshold: 0.40
+  refusal_threshold: 0.02       # CALIBRATED, not guessed -- see reports/calibration.md
   refusal_message: "I could not find information about this in the provided documents."
 
 generation:
   provider: groq
-  model: llama-3.3-70b-versatile
+  model: openai/gpt-oss-120b
   temperature: 0.0
   num_ctx: 4096
   max_context_tokens: 3000

@@ -91,7 +91,26 @@ def build_context(chunks: list, max_tokens: int = 3000) -> tuple[str, list]:
     return "\n\n".join(blocks), used
 
 
-CITATION_RE = re.compile(r"\[(\d{1,2})\]")
+# Models do not reliably emit the ASCII brackets the prompt asks for. gpt-oss
+# frequently returns CJK lenticular brackets (U+3010/U+3011), and others use
+# parentheses or superscripts. Parsing only `[1]` silently drops every citation
+# from an answer that is in fact perfectly grounded -- which reads as a total
+# failure of the citation feature when nothing is actually wrong. Accept the
+# common variants rather than trusting the model to obey formatting.
+CITATION_RE = re.compile(r"[\[【［(](\d{1,2})[\]】］)]")
+
+# Normalised to ASCII before display, so the rendered answer is consistent
+# regardless of which bracket style the model chose.
+_BRACKET_NORMALISE = [
+    (re.compile(r"【(\d{1,2})】"), r"[\1]"),
+    (re.compile(r"［(\d{1,2})］"), r"[\1]"),
+]
+
+
+def normalize_citation_markers(answer: str) -> str:
+    for pattern, replacement in _BRACKET_NORMALISE:
+        answer = pattern.sub(replacement, answer)
+    return answer
 
 
 def extract_citations(answer: str) -> list[int]:
@@ -112,6 +131,7 @@ def validate_citations(answer: str, n_sources: int) -> tuple[str, list[int], lis
     removed from the answer and reported as a `citation_violation`, which is a
     tracked metric in its own right rather than a silent repair.
     """
+    answer = normalize_citation_markers(answer)
     valid = [n for n in extract_citations(answer) if 1 <= n <= n_sources]
     invalid = [n for n in extract_citations(answer) if not 1 <= n <= n_sources]
     cleaned = answer
