@@ -21,12 +21,12 @@ measured, not estimated.*
 
 | Config | Mode | P@1 | P@3 | P@5 | R@5 | R@10 | MRR@10 | nDCG@10 | Hit@3 | p95 ms |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **A0** Keyword baseline (BM25 only) | sparse | 0.647 | 0.314 | 0.216 | 0.784 | 0.853 | 0.738 | 0.738 | 0.804 | 0.2 |
-| **A1** Dense only (MiniLM bi-encoder) | dense | 0.843 | 0.366 | 0.255 | 0.931 | 0.971 | 0.898 | 0.886 | 0.941 | 5.1 |
-| **A4** Hybrid (dense + BM25, RRF) | hybrid | 0.784 | 0.379 | 0.255 | 0.912 | 0.980 | 0.852 | 0.861 | 0.902 | 4.5 |
-| **A4b** Hybrid, sparse leg narrowed to top-5 | hybrid | 0.784 | 0.353 | 0.243 | 0.892 | 0.980 | 0.841 | 0.851 | 0.843 | 4.4 |
-| **A5** Hybrid + cross-encoder re-rank | hybrid | 0.902 | 0.431 | 0.275 | 0.980 | 1.000 | 0.941 | 0.942 | 0.961 | 478.8 |
-| **A6** Dense + cross-encoder re-rank | dense | 0.902 | 0.431 | 0.271 | 0.971 | 0.990 | 0.940 | 0.940 | 0.961 | 379.7 |
+| **A0** Keyword baseline (BM25 only) | sparse | 0.647 | 0.314 | 0.216 | 0.784 | 0.853 | 0.738 | 0.738 | 0.804 | 0.4 |
+| **A1** Dense only (MiniLM bi-encoder) | dense | 0.843 | 0.366 | 0.255 | 0.931 | 0.971 | 0.898 | 0.886 | 0.941 | 6.0 |
+| **A4** Hybrid (dense + BM25, RRF) | hybrid | 0.784 | 0.379 | 0.255 | 0.912 | 0.980 | 0.852 | 0.861 | 0.902 | 6.6 |
+| **A4b** Hybrid, sparse leg narrowed to top-5 | hybrid | 0.784 | 0.353 | 0.243 | 0.892 | 0.980 | 0.841 | 0.851 | 0.843 | 22.0 |
+| **A5** Hybrid + cross-encoder re-rank | hybrid | 0.902 | 0.431 | 0.275 | 0.980 | 1.000 | 0.941 | 0.942 | 0.961 | 1526.6 |
+| **A6** Dense + cross-encoder re-rank | dense | 0.902 | 0.431 | 0.271 | 0.971 | 0.990 | 0.940 | 0.940 | 0.961 | 355.3 |
 
 **Best configuration by Precision@3: A5 — Hybrid + cross-encoder re-rank**
 

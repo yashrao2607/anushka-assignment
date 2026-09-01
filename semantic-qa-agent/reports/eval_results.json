@@ -185,8 +185,8 @@
       "reranked": false,
       "latency_ms": {
         "p50": 0.1,
-        "p95": 0.2,
-        "mean": 0.1
+        "p95": 0.4,
+        "mean": 0.2
       },
       "n_queries": 51,
       "n_failures": 10,
@@ -349,9 +349,9 @@
       "bm25_top_n": null,
       "reranked": false,
       "latency_ms": {
-        "p50": 3.7,
-        "p95": 5.1,
-        "mean": 5.6
+        "p50": 4.7,
+        "p95": 6.0,
+        "mean": 5.1
       },
       "n_queries": 51,
       "n_failures": 3,
@@ -514,9 +514,9 @@
       "bm25_top_n": 25,
       "reranked": false,
       "latency_ms": {
-        "p50": 3.9,
-        "p95": 4.5,
-        "mean": 3.9
+        "p50": 4.5,
+        "p95": 6.6,
+        "mean": 4.7
       },
       "n_queries": 51,
       "n_failures": 5,
@@ -679,9 +679,9 @@
       "bm25_top_n": 5,
       "reranked": false,
       "latency_ms": {
-        "p50": 3.6,
-        "p95": 4.4,
-        "mean": 3.7
+        "p50": 11.6,
+        "p95": 22.0,
+        "mean": 11.9
       },
       "n_queries": 51,
       "n_failures": 8,
@@ -844,9 +844,9 @@
       "bm25_top_n": 25,
       "reranked": true,
       "latency_ms": {
-        "p50": 361.2,
-        "p95": 478.8,
-        "mean": 487.4
+        "p50": 392.5,
+        "p95": 1526.6,
+        "mean": 954.4
       },
       "n_queries": 51,
       "n_failures": 2,
@@ -1009,9 +1009,9 @@
       "bm25_top_n": null,
       "reranked": true,
       "latency_ms": {
-        "p50": 341.5,
-        "p95": 379.7,
-        "mean": 343.0
+        "p50": 327.7,
+        "p95": 355.3,
+        "mean": 329.6
       },
       "n_queries": 51,
       "n_failures": 2,
