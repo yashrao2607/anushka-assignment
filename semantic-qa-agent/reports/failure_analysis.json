@@ -1,0 +1,44 @@
+{
+  "configuration": "A5 -- hybrid + cross-encoder re-rank",
+  "n_questions": 51,
+  "n_failures": 2,
+  "hit_rate_at_3": 0.961,
+  "causes": {
+    "reranker_misordered": 2
+  },
+  "failures": [
+    {
+      "qid": "Q019",
+      "category": "paraphrase",
+      "question": "What happens to my stuff when I leave the company?",
+      "cause": "reranker_misordered",
+      "retrieved_top3": [
+        "Device And Asset Policy > Damage and Loss",
+        "Security Policy > Incident Reporting",
+        "Hr Policy > 1. Leave Entitlement"
+      ],
+      "expected": [
+        "Device And Asset Policy > Return on Exit"
+      ],
+      "gold_in_pool": true,
+      "top_score": -6.487
+    },
+    {
+      "qid": "Q050",
+      "category": "ambiguous",
+      "question": "Tell me about notice periods and timing rules.",
+      "cause": "reranker_misordered",
+      "retrieved_top3": [
+        "Customer Support Sla > Escalation Path",
+        "Customer Support Sla > Refunds and Service Credits",
+        "Payroll Policy > Provident Fund and Deductions"
+      ],
+      "expected": [
+        "Hr Policy > 3. Parental Leave",
+        "Payroll Policy > Variable Pay and Bonus"
+      ],
+      "gold_in_pool": true,
+      "top_score": -7.334
+    }
+  ]
+}

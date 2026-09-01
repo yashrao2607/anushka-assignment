@@ -111,7 +111,9 @@ def sigmoid(x: float) -> float:
     what the refusal gate thresholds on, and what is shown to a user as a
     confidence -- a raw logit of 4.7 means nothing to anyone.
     """
+    # Always return a plain Python float: numpy scalars leak into the response
+    # dataclass, where `np.False_ is False` is False and json.dumps fails.
     if x >= 0:
-        return 1.0 / (1.0 + np.exp(-x))
+        return float(1.0 / (1.0 + np.exp(-x)))
     z = np.exp(x)
     return float(z / (1.0 + z))

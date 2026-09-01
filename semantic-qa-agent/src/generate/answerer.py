@@ -102,7 +102,7 @@ class Answerer:
         top = hits[0]
         raw = top.rerank_score if top.rerank_score is not None else top.score
         confidence = sigmoid(raw) if top.rerank_score is not None else float(raw)
-        return confidence < self.threshold, confidence
+        return bool(confidence < self.threshold), float(confidence)
 
     # -- the pipeline -------------------------------------------------------
     def answer(
