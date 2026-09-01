@@ -145,6 +145,26 @@ def _split_recursive(text: str, separators: Iterable[str], max_chars: int) -> li
     return [text[i:i + max_chars].strip() for i in range(0, len(text), max_chars)]
 
 
+def _tail_overlap(piece: str, overlap_chars: int) -> str:
+    """Take the trailing overlap text, snapped to a word boundary.
+
+    A raw character slice produces fragments like "te. Delays in", which starts
+    mid-word. Those broken tokens are then embedded, adding noise to the vector
+    for no benefit. Snapping forward to the next whitespace costs a few
+    characters of overlap and keeps every carried token intact.
+    """
+    if overlap_chars <= 0 or not piece:
+        return ""
+    tail = piece[-overlap_chars:]
+    if len(piece) > overlap_chars:
+        space = tail.find(" ")
+        # Only snap when a boundary exists reasonably early; otherwise the
+        # overlap would shrink to almost nothing on long unbroken spans.
+        if 0 <= space < len(tail) // 2:
+            tail = tail[space + 1:]
+    return tail.strip()
+
+
 def _is_noise(text: str, cfg: ChunkingConfig) -> bool:
     """Reject fragments too small or too garbled to be worth indexing."""
     if len(text) < cfg.min_chunk_chars:
@@ -224,6 +244,6 @@ def chunk_page(
             )
         )
         index += 1
-        carry = piece[-overlap_chars:].strip() if overlap_chars else ""
+        carry = _tail_overlap(piece, overlap_chars)
 
     return chunks, dropped

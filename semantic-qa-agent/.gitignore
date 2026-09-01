@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+.cache/
+.pytest_cache/
+storage/chroma/
+logs/*.jsonl
+data/processed/*.jsonl
+data/manifest.csv
+reports/unparsed.csv
+.env

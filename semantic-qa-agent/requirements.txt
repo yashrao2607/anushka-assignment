@@ -1,0 +1,21 @@
+# ---- Phase 1: ingestion (all that is needed to run today) -------------------
+PyYAML>=6.0                # typed config loading
+pymupdf>=1.24              # PDF parsing (fast, per-page, layout-aware)
+python-docx>=1.1           # DOCX parsing
+beautifulsoup4>=4.12       # HTML parsing (regex fallback if absent)
+tiktoken>=0.7              # exact token counting (word-based fallback if absent)
+pytest>=8.0                # test suite
+pytest-cov>=5.0
+
+# ---- Phase 2: retrieval (install when Phase 2 starts) -----------------------
+# sentence-transformers>=3.0
+# chromadb>=0.5
+# rank-bm25>=0.2.2
+# numpy>=1.26
+
+# ---- Phase 3: generation + interfaces ---------------------------------------
+# ollama>=0.3
+# streamlit>=1.38
+# fastapi>=0.115
+# uvicorn>=0.30
+# matplotlib>=3.9
