@@ -170,7 +170,8 @@ def cmd_reid_eval(cfg, args) -> int:
         total_scored += scored
         total_recovered += recovered
         all_detail.extend(detail)
-        rows_out.append([video.name, scored, recovered,
+        found = detail[0]["events_found"] if detail else 0
+        rows_out.append([video.name, found, scored, recovered,
                          "n/a" if rate is None else f"{rate:.3f}",
                          len(res.restorations), res.fps])
 
@@ -196,8 +197,14 @@ def cmd_reid_eval(cfg, args) -> int:
          f"tau {tau}, split `{args.split}`",
          targets_table(headline, REID_TARGETS, markdown=True)),
         ("Post-occlusion recovery per sequence (M17)", render_table(
-            ["Sequence", "Occlusion events scored", "Recovered", "Rate", "Gallery restores", "FPS"],
-            rows_out, markdown=True)),
+            ["Sequence", "Events found", "Scorable", "Recovered", "Rate",
+             "Gallery restores", "FPS"], rows_out, markdown=True) +
+         "
+
+*Events found* are genuine occlusions in the ground truth. *Scorable* are "
+         "those where the detector saw the object on both sides of the gap — an event that "
+         "is not scorable is a **detection** failure, and charging it to ReID would measure "
+         "the wrong component."),
         ("Query/gallery protocol (M14–M16)", render_table(["Key", "Value"], [
             ["queries", cmc.n_queries], ["gallery items", cmc.n_gallery],
             ["identities", cmc.n_identities],

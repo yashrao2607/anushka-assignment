@@ -186,11 +186,20 @@ def find_occlusion_events(
     return events
 
 
+# The identity on either side of an occlusion is looked up within this many
+# frames of the boundary, not only on the boundary frame itself. A detector
+# that misses the object on exactly the last visible frame is a *detection*
+# failure; charging it to ReID -- or, worse, discarding the event as
+# unscorable -- would understate what the gallery actually does.
+BOUNDARY_WINDOW = 8
+
+
 def post_occlusion_recovery(
     gt_rows: Sequence[MotRow],
     predictions: Sequence[TrackBox],
     min_gap: int = DEFAULT_MIN_GAP,
     iou_thr: float = MATCH_IOU,
+    window: int = BOUNDARY_WINDOW,
 ) -> tuple[float | None, int, int, list[dict[str, Any]]]:
     """M17: fraction of occlusion events where the ORIGINAL id came back.
 
@@ -202,6 +211,7 @@ def post_occlusion_recovery(
     events = find_occlusion_events(gt_rows, min_gap)
     if not events:
         return None, 0, 0, []
+    n_found = len(events)
 
     gt_by_frame: dict[int, list[MotRow]] = defaultdict(list)
     for r in gt_rows:
@@ -210,7 +220,7 @@ def post_occlusion_recovery(
     for p in predictions:
         pred_by_frame[p.frame].append(p)
 
-    def id_on_object(frame: int, gt_track_id: int) -> int | None:
+    def id_at(frame: int, gt_track_id: int) -> int | None:
         gts = [r for r in gt_by_frame.get(frame, []) if r.track_id == gt_track_id]
         preds = pred_by_frame.get(frame, [])
         if not gts or not preds:
@@ -219,12 +229,25 @@ def post_occlusion_recovery(
         best = int(np.argmax(m[:, 0]))
         return preds[best].track_id if m[best, 0] >= iou_thr else None
 
+    def id_on_object(frame: int, gt_track_id: int, direction: int) -> int | None:
+        """Walk outwards from the boundary until the object was actually seen.
+
+        `direction` is -1 for the frames before the occlusion and +1 for after,
+        so the search always moves away from the gap and never reads an id from
+        inside it.
+        """
+        for offset in range(0, window + 1):
+            found = id_at(frame + direction * offset, gt_track_id)
+            if found is not None:
+                return found
+        return None
+
     recovered = 0
     detail: list[dict[str, Any]] = []
     scored = 0
     for ev in events:
-        before = id_on_object(ev.before_frame, ev.gt_track_id)
-        after = id_on_object(ev.after_frame, ev.gt_track_id)
+        before = id_on_object(ev.before_frame, ev.gt_track_id, -1)
+        after = id_on_object(ev.after_frame, ev.gt_track_id, +1)
         if before is None or after is None:
             # The object was not detected on one side of the gap, so this is a
             # detection failure, not an identity failure. Counted separately
@@ -240,6 +263,11 @@ def post_occlusion_recovery(
                        "before": before, "after": after})
 
     rate = round(recovered / scored, 4) if scored else None
+    # `n_found` travels with the result so a report can distinguish "there were
+    # no occlusions" from "the detector never saw the object on both sides".
+    # Those are opposite findings and a bare 0 conflates them.
+    for d in detail:
+        d["events_found"] = n_found
     return rate, scored, recovered, detail
 
 
