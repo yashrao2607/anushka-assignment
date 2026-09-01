@@ -58,8 +58,9 @@ def test_kalman_predicts_constant_velocity_after_learning_it():
 
     predicted, _ = kf.predict(mean, cov)
     x1, _, x2, _ = xyah_to_xyxy(predicted)
-    # After 14 consistent steps of +10 px the next centre should be near 155.
-    assert (x1 + x2) / 2 == pytest.approx(155.0, abs=6.0)
+    # Box at step s is (s*10, 0, s*10+40, 80), so its centre is s*10 + 20.
+    # The last observation (s=14) sat at 160; one more +10 step predicts 170.
+    assert (x1 + x2) / 2 == pytest.approx(170.0, abs=6.0)
 
 
 def test_kalman_uncertainty_grows_while_coasting():

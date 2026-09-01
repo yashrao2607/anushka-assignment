@@ -1,28 +1,28 @@
 {
   "headline": {
-    "M14": 0.9683,
-    "M15": 0.9841,
-    "M16": 0.9148
+    "M14": 0.741,
+    "M15": 0.9353,
+    "M16": 0.6395
   },
   "cmc": {
-    "rank1": 0.9683,
-    "rank5": 0.9841,
-    "map": 0.9148,
+    "rank1": 0.741,
+    "rank5": 0.9353,
+    "map": 0.6395,
     "cmc": [
-      0.9683,
-      0.9841,
-      0.9841,
-      0.9841,
-      0.9841,
-      1.0,
-      1.0,
-      1.0,
-      1.0,
-      1.0
+      0.741,
+      0.8129,
+      0.8633,
+      0.8993,
+      0.9353,
+      0.9496,
+      0.9496,
+      0.9568,
+      0.9568,
+      0.9568
     ],
-    "n_queries": 63,
-    "n_gallery": 63,
-    "n_identities": 7,
+    "n_queries": 139,
+    "n_gallery": 141,
+    "n_identities": 19,
     "post_occlusion_recovery": null,
     "occlusion_events": 0,
     "occlusion_recovered": 0,
@@ -33,7 +33,77 @@
   "recovery_detail": [
     {
       "gt_track": 1,
-      "gap": 45,
+      "gap": 28,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 1,
+      "gap": 20,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 4,
+      "gap": 92,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 5,
+      "gap": 24,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 6,
+      "gap": 26,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 7,
+      "gap": 56,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 3,
+      "gap": 76,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 9,
+      "gap": 73,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 8,
+      "gap": 109,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 1,
+      "gap": 22,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    },
+    {
+      "gt_track": 3,
+      "gap": 25,
       "outcome": "not_scorable",
       "before": null,
       "after": null
