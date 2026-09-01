@@ -8,3 +8,7 @@
 {"ts": "2026-09-01T05:51:06+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene06_camB: 450 frames -> scene06_camB.mp4, gt -> scene06_camB_gt.txt [day, 4 actors, pan]"}
 {"ts": "2026-09-01T05:51:13+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene07_camA: 450 frames -> scene07_camA.mp4, gt -> scene07_camA_gt.txt [day, 11 actors]"}
 {"ts": "2026-09-01T05:51:17+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene08_camA: 450 frames -> scene08_camA.mp4, gt -> scene08_camA_gt.txt [day, 4 actors, blur]"}
+{"ts": "2026-09-01T05:53:12+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "using cached sprites: {'bus': 1, 'person': 6}"}
+{"ts": "2026-09-01T05:53:21+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene09_camA: 450 frames -> scene09_camA.mp4, gt -> scene09_camA_gt.txt [dusk, 5 actors, occluder]"}
+{"ts": "2026-09-01T05:54:22+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene10_camA: 450 frames -> scene10_camA.mp4, gt -> scene10_camA_gt.txt [night, 4 actors, pan]"}
+{"ts": "2026-09-01T05:54:28+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene11_camA: 450 frames -> scene11_camA.mp4, gt -> scene11_camA_gt.txt [day, 9 actors, occluder]"}

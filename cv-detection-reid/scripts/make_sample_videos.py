@@ -182,6 +182,10 @@ SCENES: tuple[Scene, ...] = (
     Scene("scene06_camB", lighting="day", n_actors=4, camera_pan=-0.8, seed=6),
     Scene("scene07_camA", lighting="day", n_actors=11, seed=7),
     Scene("scene08_camA", lighting="day", n_actors=4, motion_blur=9, seed=8),
+    Scene("scene09_camA", lighting="dusk", n_actors=5, occluder=True, seed=9),
+    Scene("scene10_camA", lighting="night", n_actors=4, noise=5.0, camera_pan=1.1, seed=10),
+    Scene("scene11_camA", lighting="day", n_actors=9, occluder=True, seed=11),
+    Scene("scene12_camA", lighting="dusk", n_actors=4, motion_blur=7, camera_pan=1.3, seed=12),
 )
 
 LIGHTING_GAIN = {"day": 1.0, "dusk": 0.45, "night": 0.16}
