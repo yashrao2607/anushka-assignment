@@ -6,9 +6,10 @@ arms, HyDE) are filled in Phase 3.
 
 | # | Configuration | P@3 | P@5 | R@10 | MRR@10 | nDCG@10 | p95 ms | Δ P@3 vs A0 |
 |---|---|---|---|---|---|---|---|---|
-| A0 | Keyword baseline (BM25 only) | 0.314 | 0.216 | 0.853 | 0.738 | 0.738 | 0.3 | — |
-| A1 | Dense only (MiniLM bi-encoder) | 0.366 | 0.255 | 0.971 | 0.898 | 0.886 | 50.9 | +0.052 |
-| A4 | Hybrid (dense + BM25, RRF fusion) | 0.379 | 0.255 | 0.980 | 0.852 | 0.861 | 10.7 | +0.065 |
+| A0 | Keyword baseline (BM25 only) | 0.314 | 0.216 | 0.853 | 0.738 | 0.738 | 0.2 | — |
+| A1 | Dense only (MiniLM bi-encoder) | 0.366 | 0.255 | 0.971 | 0.898 | 0.886 | 4.6 | +0.052 |
+| A4 | Hybrid (dense + BM25, RRF) | 0.379 | 0.255 | 0.980 | 0.852 | 0.861 | 4.9 | +0.065 |
+| A4b | Hybrid, sparse leg narrowed to top-5 | 0.353 | 0.243 | 0.980 | 0.841 | 0.851 | 4.8 | +0.039 |
 
 ## Reading the table
 

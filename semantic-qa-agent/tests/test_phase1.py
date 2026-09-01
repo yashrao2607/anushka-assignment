@@ -42,9 +42,16 @@ def cfg():
 # Part 1.1 -- configuration
 # --------------------------------------------------------------------------- #
 
-def test_config_loads_with_expected_defaults(cfg):
-    assert cfg.chunking.chunk_size_tokens == 512
-    assert cfg.chunking.overlap_tokens == 64
+def test_config_loads_with_valid_defaults(cfg):
+    """Asserts *invariants*, not the tuned values.
+
+    Chunk size and overlap are deliberately retuned per corpus (they were
+    lowered from 512/64 to 128/24 for the short-document handbook corpus), so
+    pinning their exact values would make an intended tuning change look like a
+    regression. What must always hold is that they are sane and consistent.
+    """
+    assert cfg.chunking.chunk_size_tokens > 0
+    assert 0 <= cfg.chunking.overlap_tokens < cfg.chunking.chunk_size_tokens
     assert ".pdf" in cfg.ingest.supported_extensions
 
 

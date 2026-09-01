@@ -21,11 +21,28 @@ measured, not estimated.*
 
 | Config | Mode | P@1 | P@3 | P@5 | R@5 | R@10 | MRR@10 | nDCG@10 | Hit@3 | p95 ms |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **A0** Keyword baseline (BM25 only) | sparse | 0.647 | 0.314 | 0.216 | 0.784 | 0.853 | 0.738 | 0.738 | 0.804 | 0.3 |
-| **A1** Dense only (MiniLM bi-encoder) | dense | 0.843 | 0.366 | 0.255 | 0.931 | 0.971 | 0.898 | 0.886 | 0.941 | 50.9 |
-| **A4** Hybrid (dense + BM25, RRF fusion) | hybrid | 0.784 | 0.379 | 0.255 | 0.912 | 0.980 | 0.852 | 0.861 | 0.902 | 10.7 |
+| **A0** Keyword baseline (BM25 only) | sparse | 0.647 | 0.314 | 0.216 | 0.784 | 0.853 | 0.738 | 0.738 | 0.804 | 0.2 |
+| **A1** Dense only (MiniLM bi-encoder) | dense | 0.843 | 0.366 | 0.255 | 0.931 | 0.971 | 0.898 | 0.886 | 0.941 | 4.6 |
+| **A4** Hybrid (dense + BM25, RRF) | hybrid | 0.784 | 0.379 | 0.255 | 0.912 | 0.980 | 0.852 | 0.861 | 0.902 | 4.9 |
+| **A4b** Hybrid, sparse leg narrowed to top-5 | hybrid | 0.784 | 0.353 | 0.243 | 0.892 | 0.980 | 0.841 | 0.851 | 0.843 | 4.8 |
 
-**Best configuration by Precision@3: A4 — Hybrid (dense + BM25, RRF fusion)**
+**Best configuration by Precision@3: A4 — Hybrid (dense + BM25, RRF)**
+
+### Reading Precision@k correctly
+
+Precision@k divides by k, so a question with only one relevant chunk caps at
+1/k however perfect the ranking. On this golden set the average question has
+**1.41 relevant chunks**, which puts a hard ceiling on P@k:
+
+| Metric | Ceiling | Best achieved | % of ceiling |
+|---|---|---|---|
+| P@1 | 1.000 | 0.843 | 84% |
+| P@3 | 0.471 | 0.379 | 81% |
+| P@5 | 0.282 | 0.255 | 90% |
+
+Raw P@3 therefore understates performance badly. **Recall@10, MRR and nDCG are
+the metrics to judge this system on**, because they are not capped by the
+number of relevant chunks a question happens to have.
 
 ## Per-category breakdown
 
@@ -36,34 +53,45 @@ that says where the system is actually weak.
 
 | Category | n | P@3 | R@5 | MRR@10 | nDCG@10 | Hit@3 |
 |---|---|---|---|---|---|---|
-| ambiguous | – | 0.333 | 0.800 | 0.583 | 0.662 | 0.600 |
-| direct | – | 0.333 | 1.000 | 0.967 | 0.971 | 1.000 |
-| exact_id | – | 0.467 | 1.000 | 0.900 | 0.893 | 1.000 |
-| multi_chunk | – | 0.333 | 0.812 | 0.604 | 0.690 | 0.875 |
-| numeric | – | 0.467 | 1.000 | 0.900 | 0.893 | 1.000 |
-| paraphrase | – | 0.154 | 0.346 | 0.490 | 0.408 | 0.462 |
+| ambiguous | 5 | 0.333 | 0.800 | 0.583 | 0.662 | 0.600 |
+| direct | 15 | 0.333 | 1.000 | 0.967 | 0.971 | 1.000 |
+| exact_id | 5 | 0.467 | 1.000 | 0.900 | 0.893 | 1.000 |
+| multi_chunk | 8 | 0.333 | 0.812 | 0.604 | 0.690 | 0.875 |
+| numeric | 5 | 0.467 | 1.000 | 0.900 | 0.893 | 1.000 |
+| paraphrase | 13 | 0.154 | 0.346 | 0.490 | 0.408 | 0.462 |
 
 ### A1 — Dense only (MiniLM bi-encoder)
 
 | Category | n | P@3 | R@5 | MRR@10 | nDCG@10 | Hit@3 |
 |---|---|---|---|---|---|---|
-| ambiguous | – | 0.267 | 0.700 | 0.650 | 0.626 | 0.600 |
-| direct | – | 0.333 | 0.967 | 1.000 | 0.993 | 1.000 |
-| exact_id | – | 0.333 | 0.900 | 0.900 | 0.825 | 1.000 |
-| multi_chunk | – | 0.417 | 1.000 | 0.900 | 0.897 | 0.875 |
-| numeric | – | 0.533 | 1.000 | 0.767 | 0.826 | 1.000 |
-| paraphrase | – | 0.359 | 0.923 | 0.923 | 0.903 | 1.000 |
+| ambiguous | 5 | 0.267 | 0.700 | 0.650 | 0.626 | 0.600 |
+| direct | 15 | 0.333 | 0.967 | 1.000 | 0.993 | 1.000 |
+| exact_id | 5 | 0.333 | 0.900 | 0.900 | 0.825 | 1.000 |
+| multi_chunk | 8 | 0.417 | 1.000 | 0.900 | 0.897 | 0.875 |
+| numeric | 5 | 0.533 | 1.000 | 0.767 | 0.826 | 1.000 |
+| paraphrase | 13 | 0.359 | 0.923 | 0.923 | 0.903 | 1.000 |
 
-### A4 — Hybrid (dense + BM25, RRF fusion)
+### A4 — Hybrid (dense + BM25, RRF)
 
 | Category | n | P@3 | R@5 | MRR@10 | nDCG@10 | Hit@3 |
 |---|---|---|---|---|---|---|
-| ambiguous | – | 0.600 | 0.900 | 0.867 | 0.807 | 1.000 |
-| direct | – | 0.333 | 0.967 | 1.000 | 0.994 | 1.000 |
-| exact_id | – | 0.467 | 1.000 | 1.000 | 0.913 | 1.000 |
-| multi_chunk | – | 0.375 | 1.000 | 0.844 | 0.879 | 0.875 |
-| numeric | – | 0.533 | 1.000 | 0.800 | 0.877 | 1.000 |
-| paraphrase | – | 0.256 | 0.731 | 0.642 | 0.692 | 0.692 |
+| ambiguous | 5 | 0.600 | 0.900 | 0.867 | 0.807 | 1.000 |
+| direct | 15 | 0.333 | 0.967 | 1.000 | 0.994 | 1.000 |
+| exact_id | 5 | 0.467 | 1.000 | 1.000 | 0.913 | 1.000 |
+| multi_chunk | 8 | 0.375 | 1.000 | 0.844 | 0.879 | 0.875 |
+| numeric | 5 | 0.533 | 1.000 | 0.800 | 0.877 | 1.000 |
+| paraphrase | 13 | 0.256 | 0.731 | 0.642 | 0.692 | 0.692 |
+
+### A4b — Hybrid, sparse leg narrowed to top-5
+
+| Category | n | P@3 | R@5 | MRR@10 | nDCG@10 | Hit@3 |
+|---|---|---|---|---|---|---|
+| ambiguous | 5 | 0.533 | 0.800 | 0.800 | 0.729 | 0.800 |
+| direct | 15 | 0.333 | 1.000 | 1.000 | 0.996 | 1.000 |
+| exact_id | 5 | 0.467 | 1.000 | 1.000 | 0.913 | 1.000 |
+| multi_chunk | 8 | 0.292 | 0.875 | 0.812 | 0.849 | 0.750 |
+| numeric | 5 | 0.533 | 1.000 | 0.800 | 0.877 | 1.000 |
+| paraphrase | 13 | 0.231 | 0.731 | 0.644 | 0.697 | 0.615 |
 
 ## Retrieval failures (no relevant chunk in the top 3)
 
@@ -88,3 +116,13 @@ that says where the system is actually weak.
 - `Q021` (paraphrase) — *I am struggling in my role and my rating was poor. What happens next?* → got `performance_review__p1__c2, performance_review__p1__c0`
 - `Q023` (paraphrase) — *Is the company going to pay if I want to attend an industry event?* → got `communication_guidelines__p1__c2, payroll_policy__p1__c2`
 - `Q031` (multi_chunk) — *How do I submit an expense claim and by when?* → got `travel_policy__p1__c1, customer_support_sla__p1__c3`
+
+**A4b** — 8 of 51 queries
+- `Q017` (paraphrase) — *My laptop will not turn on. What should I do?* → got `device_and_asset_policy__p1__c0, customer_support_sla__p1__c3`
+- `Q019` (paraphrase) — *What happens to my stuff when I leave the company?* → got `hr_policy__p1__c1, training_policy__p1__c2`
+- `Q020` (paraphrase) — *Someone wants their personal information erased. How quickly must we act?* → got `data_retention_policy__p1__c2, security_policy__p1__c1`
+- `Q021` (paraphrase) — *I am struggling in my role and my rating was poor. What happens next?* → got `performance_review__p1__c2, performance_review__p1__c0`
+- `Q023` (paraphrase) — *Is the company going to pay if I want to attend an industry event?* → got `communication_guidelines__p1__c2, payroll_policy__p1__c2`
+- `Q031` (multi_chunk) — *How do I submit an expense claim and by when?* → got `travel_policy__p1__c1, customer_support_sla__p1__c3`
+- `Q032` (multi_chunk) — *When does my salary get revised and when will I hear about it?* → got `payroll_policy__p1__c0, performance_review__p1__c1`
+- `Q050` (ambiguous) — *Tell me about notice periods and timing rules.* → got `customer_support_sla__p1__c2, communication_guidelines__p1__c2`

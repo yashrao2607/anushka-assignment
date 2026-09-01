@@ -248,9 +248,31 @@ def _write_report(cfg: Config, payload: dict, results: list[ConfigResult]) -> Pa
             f"{_fmt(m['hit_rate@3'])} | {r.latency_ms['p95']} |"
         )
 
+    ceil = payload["precision_ceiling"]
     lines += [
         "",
         f"**Best configuration by Precision@3: {best.name} — {best.description}**",
+        "",
+        "### Reading Precision@k correctly",
+        "",
+        f"Precision@k divides by k, so a question with only one relevant chunk caps at",
+        f"1/k however perfect the ranking. On this golden set the average question has",
+        f"**{stats['avg_relevant_per_q']} relevant chunks**, which puts a hard ceiling on P@k:",
+        "",
+        "| Metric | Ceiling | Best achieved | % of ceiling |",
+        "|---|---|---|---|",
+    ]
+    for k in (1, 3, 5):
+        key = f"precision@{k}"
+        achieved = max(r.metrics.get(key, 0.0) for r in results)
+        pct = 100 * achieved / ceil[key] if ceil[key] else 0.0
+        lines.append(f"| P@{k} | {_fmt(ceil[key])} | {_fmt(achieved)} | {pct:.0f}% |")
+
+    lines += [
+        "",
+        "Raw P@3 therefore understates performance badly. **Recall@10, MRR and nDCG are",
+        "the metrics to judge this system on**, because they are not capped by the",
+        "number of relevant chunks a question happens to have.",
         "",
         "## Per-category breakdown",
         "",
@@ -266,9 +288,9 @@ def _write_report(cfg: Config, payload: dict, results: list[ConfigResult]) -> Pa
             "|---|---|---|---|---|---|---|",
         ]
         for category, m in r.per_category.items():
-            count = sum(1 for f in [] if False)  # counts come from the runner below
+            n = r.category_counts.get(category, 0)
             lines.append(
-                f"| {category} | – | {_fmt(m['precision@3'])} | {_fmt(m['recall@5'])} | "
+                f"| {category} | {n} | {_fmt(m['precision@3'])} | {_fmt(m['recall@5'])} | "
                 f"{_fmt(m['mrr@10'])} | {_fmt(m['ndcg@10'])} | {_fmt(m['hit_rate@3'])} |"
             )
         lines.append("")
