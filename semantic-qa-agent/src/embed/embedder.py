@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+import threading
 import time
 from pathlib import Path
 from typing import Sequence
@@ -25,12 +26,36 @@ from ..utils.logging import get_logger
 
 
 class EmbeddingCache:
-    """SQLite-backed vector cache. Chosen over pickle so it is concurrent-safe,
-    incrementally writable, and inspectable with any SQLite client."""
+    """SQLite-backed vector cache. Chosen over pickle so it is incrementally
+    writable, crash-safe, and inspectable with any SQLite client.
+
+    **Thread safety.** By default `sqlite3` refuses to use a connection from any
+    thread other than the one that created it. That is fatal under Streamlit,
+    which caches this object across reruns via `@st.cache_resource` but executes
+    each rerun on a *new* script-runner thread -- so the second interaction with
+    the UI raised `ProgrammingError: SQLite objects created in a thread can only
+    be used in that same thread`.
+
+    The fix is two-part, and both halves are required:
+      * `check_same_thread=False` lifts sqlite3's own thread check;
+      * an explicit `RLock` serialises every read and write, because lifting the
+        check removes the guard without making concurrent access safe.
+
+    A lock is the right tool rather than a thread-local connection pool: writes
+    here are small and infrequent (a cache miss), so contention is negligible,
+    while a pool would open one file handle per Streamlit thread and leak them.
+    """
 
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(str(path))
+        self.conn = sqlite3.connect(str(path), check_same_thread=False)
+        # WAL lets a reader proceed while a writer holds the file, which matters
+        # once more than one thread is querying the cache.
+        try:
+            self.conn.execute("PRAGMA journal_mode=WAL")
+        except sqlite3.DatabaseError:  # read-only volume, network share, etc.
+            pass
+        self._lock = threading.RLock()
         self.conn.execute(
             "CREATE TABLE IF NOT EXISTS embeddings ("
             "  key TEXT PRIMARY KEY, dim INTEGER NOT NULL, vec BLOB NOT NULL)"
@@ -47,31 +72,35 @@ class EmbeddingCache:
         if not keys:
             return {}
         out: dict[str, np.ndarray] = {}
-        # Chunk the IN clause: SQLite caps host parameters at 999.
-        for i in range(0, len(keys), 900):
-            batch = keys[i:i + 900]
-            placeholders = ",".join("?" * len(batch))
-            rows = self.conn.execute(
-                f"SELECT key, dim, vec FROM embeddings WHERE key IN ({placeholders})",
-                batch,
-            ).fetchall()
-            for key, dim, blob in rows:
-                out[key] = np.frombuffer(blob, dtype=np.float32).reshape(dim)
-        self.hits += len(out)
-        self.misses += len(keys) - len(out)
+        with self._lock:
+            # Chunk the IN clause: SQLite caps host parameters at 999.
+            for i in range(0, len(keys), 900):
+                batch = keys[i:i + 900]
+                placeholders = ",".join("?" * len(batch))
+                rows = self.conn.execute(
+                    f"SELECT key, dim, vec FROM embeddings WHERE key IN ({placeholders})",
+                    batch,
+                ).fetchall()
+                for key, dim, blob in rows:
+                    out[key] = np.frombuffer(blob, dtype=np.float32).reshape(dim)
+            self.hits += len(out)
+            self.misses += len(keys) - len(out)
         return out
 
     def put_many(self, items: dict[str, np.ndarray]) -> None:
         if not items:
             return
-        self.conn.executemany(
-            "INSERT OR REPLACE INTO embeddings (key, dim, vec) VALUES (?, ?, ?)",
-            [(k, int(v.shape[0]), v.astype(np.float32).tobytes()) for k, v in items.items()],
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.executemany(
+                "INSERT OR REPLACE INTO embeddings (key, dim, vec) VALUES (?, ?, ?)",
+                [(k, int(v.shape[0]), v.astype(np.float32).tobytes())
+                 for k, v in items.items()],
+            )
+            self.conn.commit()
 
     def close(self) -> None:
-        self.conn.close()
+        with self._lock:
+            self.conn.close()
 
 
 class Embedder:

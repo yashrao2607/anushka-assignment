@@ -252,7 +252,7 @@ def render_scene(scene: Scene, sprites: dict[str, list[np.ndarray]], cfg, out_di
 
     out_path = out_dir / f"{scene.name}.mp4"
     out_dir.mkdir(parents=True, exist_ok=True)
-    writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
+    writer = cv2.VideoWriter(str(out_path), cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
     if not writer.isOpened():
         raise IOError(f"cannot open writer for {out_path}")
 
