@@ -240,8 +240,7 @@ def cmd_ask(args, cfg) -> int:
         args.text, top_k=args.top_k, allow_llm=not args.no_llm
     )
 
-    print(f'
-Q: {response.query}')
+    print(f'\nQ: {response.query}')
     print("=" * 74)
     print(response.answer)
     print("=" * 74)
@@ -254,14 +253,12 @@ Q: {response.query}')
         print(f"citation violations: {response.citation_violations}")
 
     if response.citations:
-        print("
-SOURCES")
+        print("\nSOURCES")
         for c in response.citations:
             print(f"  [{c.marker}] {c.doc_title} > {c.section_heading} (p.{c.page_no})")
             print(f"      {c.quote[:150]}...")
     if response.latency_ms:
-        print(f"
-latency: {response.latency_ms}")
+        print(f"\nlatency: {response.latency_ms}")
     print(f"api usage: {answerer.client.usage_summary()}")
     return 0
 
@@ -285,8 +282,7 @@ def cmd_calibrate(args, cfg) -> int:
         ("Balanced accuracy", best["balanced"]),
         ("LLM calls used", 0),
     ], "REFUSAL CALIBRATION"))
-    print("
-reports/calibration.md · reports/calibration.json")
+    print("\nreports/calibration.md · reports/calibration.json")
     return 0
 
 
@@ -300,16 +296,12 @@ def cmd_judge(args, cfg) -> int:
     payload = run_judgement(cfg, answerer, sample_size=args.n)
     print()
     print(render_table(list(payload["summary"].items()), "ANSWER QUALITY"))
-    print("
-reports/answer_quality.md")
+    print("\nreports/answer_quality.md")
     return 0
 
 
 def cmd_serve(args, cfg) -> int:
-    print("Launch the UI with:
-
-    streamlit run app.py
-")
+    print("Launch the UI with:\n\n    streamlit run app.py\n")
     return 0
 
 
