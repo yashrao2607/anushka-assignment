@@ -186,6 +186,14 @@ SCENES: tuple[Scene, ...] = (
     Scene("scene10_camA", lighting="night", n_actors=4, noise=5.0, camera_pan=1.1, seed=10),
     Scene("scene11_camA", lighting="day", n_actors=9, occluder=True, seed=11),
     Scene("scene12_camA", lighting="dusk", n_actors=4, motion_blur=7, camera_pan=1.3, seed=12),
+    # Occluders are spread across all three lighting conditions on purpose: the
+    # splitter stratifies by lighting, so clustering every occlusion event in
+    # one condition would leave a whole split with no way to measure M17.
+    Scene("scene13_camA", lighting="night", n_actors=4, occluder=True, noise=4.0, seed=13),
+    Scene("scene14_camA", lighting="day", n_actors=5, occluder=True, seed=14),
+    Scene("scene15_camA", lighting="dusk", n_actors=4, occluder=True, seed=15),
+    Scene("scene16_camB", lighting="day", n_actors=4, occluder=True, camera_pan=0.9, seed=16),
+    Scene("scene16_camA", lighting="day", n_actors=4, occluder=True, seed=16),
 )
 
 LIGHTING_GAIN = {"day": 1.0, "dusk": 0.45, "night": 0.16}

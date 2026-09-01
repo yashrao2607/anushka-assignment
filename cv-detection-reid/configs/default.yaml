@@ -109,6 +109,6 @@ reid:
   min_crop_wh: [16, 32]        # crops smaller than this fall back to motion-only
   embedding_ema: 0.9
   gallery:
-    threshold: 0.35            # tau_reid -- calibrated in 3.1, never guessed
+    threshold: 0.3            # tau_reid -- calibrated in 3.1, never guessed
     ttl_frames: 300
     class_gated: true          # a car is never re-identified as a person

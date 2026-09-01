@@ -51,6 +51,9 @@ class TrackVideoResult:
     predictions: list[TrackBox] = field(default_factory=list)
     rows: list[dict[str, Any]] = field(default_factory=list)
     timing: dict[str, float] = field(default_factory=dict)
+    extractor: dict[str, Any] = field(default_factory=dict)
+    gallery: dict[str, Any] = field(default_factory=dict)
+    restorations: list[tuple[int, int, float]] = field(default_factory=list)
 
     @property
     def fps(self) -> float:
@@ -65,6 +68,7 @@ class TrackVideoResult:
             "detections": self.detections,
             "unique_tracks": self.tracks_created,
             "unique_by_class": self.unique_by_class,
+            "id_restorations": len(self.restorations),
             "fps": self.fps,
             **{k: round(v, 2) for k, v in self.timing.items()},
         }
@@ -79,8 +83,11 @@ def track_video(
     save_csv: Path | None = None,
     max_frames: int | None = None,
     with_reid: bool = False,
+    with_gallery: bool = False,
     camera_id: str = "cam0",
     show_trail: bool = True,
+    extractor=None,
+    gallery=None,
 ) -> TrackVideoResult:
     from ..models.detector import Detector
 
@@ -92,17 +99,31 @@ def track_video(
 
     detector = Detector(cfg, weights)
     name = (tracker_type or cfg.tracking.tracker_type).lower()
+
+    if with_reid and name != "botsort":
+        # Only BoT-SORT consumes appearance. Silently ignoring the flag would
+        # produce a "with ReID" ablation row that had no ReID in it.
+        raise ValueError(f"--reid requires the botsort tracker, not {name!r}")
+
+    if with_reid and extractor is None:
+        from ..reid.extractor import ReidExtractor
+
+        extractor = ReidExtractor(cfg)
+
     tracker = (
-        build_tracker(cfg, name, camera_id=camera_id, with_reid=with_reid)
+        build_tracker(cfg, name, camera_id=camera_id, with_reid=with_reid,
+                      with_gallery=with_gallery, gallery=gallery)
         if name == "botsort"
         else build_tracker(cfg, name, camera_id=camera_id)
     )
 
-    result = TrackVideoResult(video=video_path.name, tracker=name)
+    label = name + ("+reid" if with_reid else "") + ("+gallery" if with_gallery else "")
+    result = TrackVideoResult(video=video_path.name, tracker=label)
+    result.extractor = extractor.describe() if extractor is not None else {}
     writer = VideoWriter(save_video, fps=src_fps) if save_video else None
     seen_ids: set[int] = set()
     class_ids: dict[str, set[int]] = {}
-    t_det = t_trk = 0.0
+    t_det = t_trk = t_emb = 0.0
     t0 = time.perf_counter()
     frame_no = 0
 
@@ -124,6 +145,14 @@ def track_video(
             )
             t_det += time.perf_counter() - td
             result.detections += len(dets)
+
+            if extractor is not None and dets:
+                te = time.perf_counter()
+                # PRD 9.2: every crop in the frame goes through ONE forward
+                # pass. Per-crop calls are the single biggest reason a naive
+                # ReID pipeline runs at a fraction of its achievable FPS.
+                tracker.set_embeddings(extractor.extract(frame, [d.xyxy for d in dets]))
+                t_emb += time.perf_counter() - te
 
             tt = time.perf_counter()
             tracks = tracker.update(dets, frame=frame)
@@ -158,10 +187,15 @@ def track_video(
     result.timing = {
         "total_ms": total_ms,
         "detect_ms": t_det * 1000.0,
+        "embed_ms": t_emb * 1000.0,
         "track_ms": t_trk * 1000.0,
         "detect_ms_per_frame": (t_det * 1000.0 / result.frames) if result.frames else 0.0,
         "track_ms_per_frame": (t_trk * 1000.0 / result.frames) if result.frames else 0.0,
+        "embed_ms_per_frame": (t_emb * 1000.0 / result.frames) if result.frames else 0.0,
     }
+    if getattr(tracker, "gallery", None) is not None:
+        result.gallery = tracker.gallery.describe()
+        result.restorations = list(getattr(tracker, "restored_ids", []))
     result.tracks_created = len(seen_ids)
     result.unique_by_class = {k: len(v) for k, v in sorted(class_ids.items())}
 

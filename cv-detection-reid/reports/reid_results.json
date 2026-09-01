@@ -1,0 +1,48 @@
+{
+  "headline": {
+    "M14": 0.9683,
+    "M15": 0.9841,
+    "M16": 0.9148
+  },
+  "cmc": {
+    "rank1": 0.9683,
+    "rank5": 0.9841,
+    "map": 0.9148,
+    "cmc": [
+      0.9683,
+      0.9841,
+      0.9841,
+      0.9841,
+      0.9841,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "n_queries": 63,
+    "n_gallery": 63,
+    "n_identities": 7,
+    "post_occlusion_recovery": null,
+    "occlusion_events": 0,
+    "occlusion_recovered": 0,
+    "cross_camera_rate": null,
+    "cross_camera_events": 0,
+    "cross_camera_matched": 0
+  },
+  "recovery_detail": [
+    {
+      "gt_track": 1,
+      "gap": 45,
+      "outcome": "not_scorable",
+      "before": null,
+      "after": null
+    }
+  ],
+  "tau": 0.3,
+  "reid_backend": "resnet18",
+  "reid_model": "resnet18",
+  "embedding_dim": 512,
+  "device": "cpu",
+  "crop_size": "256x128"
+}

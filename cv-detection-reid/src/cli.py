@@ -88,8 +88,50 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("runs", help="list registered training runs")
 
-    for name, phase in (("reid", "3.1"), ("demo", "3.2"), ("export", "3.3")):
-        sub.add_parser(name, help=f"(Phase {phase}) not implemented yet")
+    cal = sub.add_parser("calibrate", help="sweep tau_reid over real occlusion events (M17)")
+    cal.add_argument("--split", default="trainval", choices=["train", "val", "trainval", "test"],
+                     help="default trainval: the test split is never used to choose a threshold")
+    cal.add_argument("--backend", default=None, choices=["auto", "osnet", "resnet18", "colour"])
+    cal.add_argument("--apply", action="store_true", help="write the chosen tau into the config")
+
+    re_ = sub.add_parser("reid-eval", help="Rank-k / CMC / mAP + post-occlusion recovery (M14-M17)")
+    re_.add_argument("--split", default="test", choices=["train", "val", "test"])
+    re_.add_argument("--weights", default=None)
+    re_.add_argument("--tau", type=float, default=None)
+    re_.add_argument("--backend", default=None, choices=["auto", "osnet", "resnet18", "colour"])
+    re_.add_argument("--max-frames", type=int, default=None)
+
+    cc = sub.add_parser("cross-camera", help="two-view hand-off demo + M18")
+    cc.add_argument("--cam-a", default=None)
+    cc.add_argument("--cam-b", default=None)
+    cc.add_argument("--tau", type=float, default=None)
+    cc.add_argument("--backend", default=None, choices=["auto", "osnet", "resnet18", "colour"])
+
+    dm = sub.add_parser("demo", help="live webcam / RTSP / file demo with overlays")
+    dm.add_argument("--source", required=True, help="0 for webcam, an rtsp:// URL, or a file")
+    dm.add_argument("--tracker", default=None, choices=["iou", "bytetrack", "botsort"])
+    dm.add_argument("--weights", default=None)
+    dm.add_argument("--reid", action="store_true")
+    dm.add_argument("--gallery", action="store_true", help="enable long-occlusion recovery")
+    dm.add_argument("--save", action="store_true")
+    dm.add_argument("--show", action="store_true", help="open a display window")
+    dm.add_argument("--max-frames", type=int, default=None)
+    dm.add_argument("--blur-faces", action="store_true", help="privacy blur (PRD 17)")
+    dm.add_argument("--line", default=None, help="x1,y1,x2,y2 counting line")
+
+    ex = sub.add_parser("export", help="ONNX export + mAP parity check (NFR-6)")
+    ex.add_argument("--weights", default=None)
+    ex.add_argument("--format", default="onnx")
+    ex.add_argument("--half", action="store_true")
+    ex.add_argument("--verify", action="store_true", help="re-score the export and compare mAP")
+    ex.add_argument("--limit", type=int, default=None)
+
+    fa = sub.add_parser("failures", help="build the diagnosed failure gallery (PRD 13.5)")
+    fa.add_argument("--split", default="test", choices=["train", "val", "test"])
+    fa.add_argument("--weights", default=None)
+    fa.add_argument("--max-cases", type=int, default=40)
+
+    sub.add_parser("report", help="assemble every report into reports/FINAL_REPORT.md")
     return p
 
 
@@ -491,6 +533,19 @@ def cmd_runs(cfg) -> int:
     return 0
 
 
+# Phase 3 commands live in their own module to keep this file a readable
+# dispatch table; they are bound into this namespace here.
+from .cli_phase3 import (  # noqa: E402
+    cmd_calibrate,
+    cmd_cross_camera,
+    cmd_demo,
+    cmd_export,
+    cmd_failures,
+    cmd_reid_eval,
+    cmd_report,
+)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
@@ -524,9 +579,20 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_ablate(cfg, args)
         if args.command == "runs":
             return cmd_runs(cfg)
-        if args.command in {"reid", "demo", "export"}:
-            print(f"`{args.command}` lands in Phase 3 -- see PHASE_PLAN_Project2.md")
-            return 0
+        if args.command == "calibrate":
+            return cmd_calibrate(cfg, args)
+        if args.command == "reid-eval":
+            return cmd_reid_eval(cfg, args)
+        if args.command == "cross-camera":
+            return cmd_cross_camera(cfg, args)
+        if args.command == "demo":
+            return cmd_demo(cfg, args)
+        if args.command == "export":
+            return cmd_export(cfg, args)
+        if args.command == "failures":
+            return cmd_failures(cfg, args)
+        if args.command == "report":
+            return cmd_report(cfg)
     except (FileNotFoundError, ValueError, IOError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

@@ -107,6 +107,10 @@ class ByteTracker(BaseTracker):
     def _post_match(self, track: KalmanTrack, det: PredBox) -> None:
         return None
 
+    def _birth_or_restore(self, det: PredBox, det_index: int) -> KalmanTrack:
+        """Hook: BoT-SORT with a gallery overrides this to restore an old id."""
+        return self._birth(det)
+
     def update(self, detections: Sequence[PredBox], frame=None) -> list[KalmanTrack]:
         self.frame_id += 1
         hi, lo = split_by_confidence(detections, self.t.track_high_thresh, self.t.track_low_thresh)
@@ -160,11 +164,11 @@ class ByteTracker(BaseTracker):
             if track not in self.lost:
                 self.lost.append(track)
 
-        # -- birth ----------------------------------------------------------
+        # -- birth (or ReID restoration) -------------------------------------
         for di in u_hi:
             det = hi[di]
             if det.conf >= self.t.new_track_thresh:
-                track = self._birth(det)
+                track = self._birth_or_restore(det, di)
                 self._post_match(track, det)
                 activated.append(track)
 
@@ -193,11 +197,22 @@ class BotSortTracker(ByteTracker):
     name = "botsort"
     use_gmc = True
 
-    def __init__(self, cfg, camera_id: str = "cam0", with_reid: bool = True, extractor=None):
+    def __init__(self, cfg, camera_id: str = "cam0", with_reid: bool = True,
+                 extractor=None, with_gallery: bool = False, gallery=None):
         self.use_appearance = bool(with_reid)
         super().__init__(cfg, camera_id)
         self.extractor = extractor
         self._frame_embeddings: dict[int, np.ndarray] = {}
+        # B5 is appearance-fused association; B6 adds the explicit gallery that
+        # survives an occlusion longer than the tracker's own memory.
+        self.use_gallery = bool(with_gallery and with_reid)
+        if self.use_gallery:
+            from ..reid.gallery import ReidGallery
+
+            self.gallery = gallery if gallery is not None else ReidGallery(cfg)
+        else:
+            self.gallery = None
+        self.restored_ids: list[tuple[int, int, float]] = []   # (frame, track_id, distance)
 
     def set_embeddings(self, embeddings: dict[int, np.ndarray]) -> None:
         """Embeddings for this frame's detections, keyed by index into `detections`."""
@@ -256,9 +271,53 @@ class BotSortTracker(ByteTracker):
             blended = alpha * track.smoothed_embedding + (1.0 - alpha) * emb
             track.smoothed_embedding = blended / max(1e-12, float(np.linalg.norm(blended)))
 
+    def _birth_or_restore(self, det: PredBox, det_index: int) -> KalmanTrack:
+        """PRD 9.4: query the gallery before issuing a brand-new identity.
+
+        A detection that matches no *active* track is exactly the moment an
+        object re-emerges from behind an occluder. Issuing a new id here is the
+        failure the PRD opens with -- "a car passes behind a pole for 8 frames
+        and returns as a brand-new ID" -- so this is where it is prevented.
+        """
+        if not self.use_gallery:
+            return self._birth(det)
+
+        emb = self._embedding_for(det_index)
+        active_ids = [t.track_id for t in self.tracked]
+        outcome = self.gallery.query(
+            emb, det.cls_id, self.frame_id, camera_id=self.camera_id, exclude=active_ids,
+        )
+        if not outcome.matched:
+            return self._birth(det)
+
+        track = KalmanTrack(
+            track_id=outcome.track_id, cls_id=det.cls_id, xyxy=det.xyxy, conf=det.conf,
+            state=TrackState.TRACKED, hits=self.t.min_hits,
+            first_seen_frame=self.frame_id, last_seen_frame=self.frame_id,
+            camera_id=self.camera_id, reid_restored=True,
+        )
+        track.initiate()
+        if emb is not None:
+            track.smoothed_embedding = emb.copy()
+        # Retire the stale copy so the restored identity is not held by two
+        # objects at once, which would immediately produce an ID switch.
+        self.lost = [t for t in self.lost if t.track_id != outcome.track_id]
+        self.restored_ids.append((self.frame_id, outcome.track_id, outcome.distance))
+        return track
+
     def update(self, detections: Sequence[PredBox], frame=None) -> list[KalmanTrack]:
         self._current_dets = list(detections)
-        return super().update(detections, frame)
+        tracks = super().update(detections, frame)
+        if self.use_gallery:
+            # Only LOST tracks are deposited. An actively tracked object does
+            # not need a gallery entry, and adding one would let a present
+            # object be "restored" onto a different detection in the same frame.
+            for track in self.lost:
+                if track.smoothed_embedding is not None:
+                    self.gallery.add(track.track_id, track.cls_id, track.smoothed_embedding,
+                                     track.last_seen_frame, self.camera_id)
+            self.gallery.expire(self.frame_id)
+        return tracks
 
 
 TRACKERS = {"iou": IouTracker, "bytetrack": ByteTracker, "botsort": BotSortTracker}
