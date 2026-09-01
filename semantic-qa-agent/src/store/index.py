@@ -121,7 +121,16 @@ def load_retriever(cfg: Config, backend: str | None = None) -> Retriever:
         store.add([r["chunk_id"] for r in records], vectors, records)
 
     bm25: BM25Index | None = BM25Index()
-    if not bm25.load(cfg.root / "storage" / "bm25_index.pkl"):
+    chunk_ids = [r["chunk_id"] for r in records]
+    loaded = bm25.load(cfg.root / "storage" / "bm25_index.pkl")
+    # A pickled index built from a different chunking configuration would
+    # reference chunk ids that no longer exist, silently returning nothing for
+    # the sparse leg. Verify the ids match rather than trusting the file.
+    if loaded and bm25.ids != chunk_ids:
+        get_logger().info("bm25 index is stale (%d ids vs %d chunks) -- rebuilding",
+                          len(bm25.ids), len(chunk_ids))
+        loaded = False
+    if not loaded:
         try:
             bm25.build(
                 [r["chunk_id"] for r in records],

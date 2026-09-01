@@ -3,7 +3,7 @@ __pycache__/
 .venv/
 .cache/
 .pytest_cache/
-storage/chroma/
+storage/
 logs/*.jsonl
 data/processed/*.jsonl
 data/manifest.csv
