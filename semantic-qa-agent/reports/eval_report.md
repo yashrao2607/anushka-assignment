@@ -22,11 +22,13 @@ measured, not estimated.*
 | Config | Mode | P@1 | P@3 | P@5 | R@5 | R@10 | MRR@10 | nDCG@10 | Hit@3 | p95 ms |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **A0** Keyword baseline (BM25 only) | sparse | 0.647 | 0.314 | 0.216 | 0.784 | 0.853 | 0.738 | 0.738 | 0.804 | 0.2 |
-| **A1** Dense only (MiniLM bi-encoder) | dense | 0.843 | 0.366 | 0.255 | 0.931 | 0.971 | 0.898 | 0.886 | 0.941 | 4.6 |
-| **A4** Hybrid (dense + BM25, RRF) | hybrid | 0.784 | 0.379 | 0.255 | 0.912 | 0.980 | 0.852 | 0.861 | 0.902 | 4.9 |
-| **A4b** Hybrid, sparse leg narrowed to top-5 | hybrid | 0.784 | 0.353 | 0.243 | 0.892 | 0.980 | 0.841 | 0.851 | 0.843 | 4.8 |
+| **A1** Dense only (MiniLM bi-encoder) | dense | 0.843 | 0.366 | 0.255 | 0.931 | 0.971 | 0.898 | 0.886 | 0.941 | 5.1 |
+| **A4** Hybrid (dense + BM25, RRF) | hybrid | 0.784 | 0.379 | 0.255 | 0.912 | 0.980 | 0.852 | 0.861 | 0.902 | 4.5 |
+| **A4b** Hybrid, sparse leg narrowed to top-5 | hybrid | 0.784 | 0.353 | 0.243 | 0.892 | 0.980 | 0.841 | 0.851 | 0.843 | 4.4 |
+| **A5** Hybrid + cross-encoder re-rank | hybrid | 0.902 | 0.431 | 0.275 | 0.980 | 1.000 | 0.941 | 0.942 | 0.961 | 478.8 |
+| **A6** Dense + cross-encoder re-rank | dense | 0.902 | 0.431 | 0.271 | 0.971 | 0.990 | 0.940 | 0.940 | 0.961 | 379.7 |
 
-**Best configuration by Precision@3: A4 — Hybrid (dense + BM25, RRF)**
+**Best configuration by Precision@3: A5 — Hybrid + cross-encoder re-rank**
 
 ### Reading Precision@k correctly
 
@@ -36,9 +38,9 @@ Precision@k divides by k, so a question with only one relevant chunk caps at
 
 | Metric | Ceiling | Best achieved | % of ceiling |
 |---|---|---|---|
-| P@1 | 1.000 | 0.843 | 84% |
-| P@3 | 0.471 | 0.379 | 81% |
-| P@5 | 0.282 | 0.255 | 90% |
+| P@1 | 1.000 | 0.902 | 90% |
+| P@3 | 0.471 | 0.431 | 92% |
+| P@5 | 0.282 | 0.275 | 97% |
 
 Raw P@3 therefore understates performance badly. **Recall@10, MRR and nDCG are
 the metrics to judge this system on**, because they are not capped by the
@@ -93,6 +95,28 @@ that says where the system is actually weak.
 | numeric | 5 | 0.533 | 1.000 | 0.800 | 0.877 | 1.000 |
 | paraphrase | 13 | 0.231 | 0.731 | 0.644 | 0.697 | 0.615 |
 
+### A5 — Hybrid + cross-encoder re-rank
+
+| Category | n | P@3 | R@5 | MRR@10 | nDCG@10 | Hit@3 |
+|---|---|---|---|---|---|---|
+| ambiguous | 5 | 0.467 | 0.900 | 0.850 | 0.811 | 0.800 |
+| direct | 15 | 0.356 | 1.000 | 1.000 | 0.997 | 1.000 |
+| exact_id | 5 | 0.467 | 1.000 | 1.000 | 0.967 | 1.000 |
+| multi_chunk | 8 | 0.458 | 1.000 | 1.000 | 1.000 | 1.000 |
+| numeric | 5 | 0.533 | 1.000 | 0.900 | 0.927 | 1.000 |
+| paraphrase | 13 | 0.436 | 0.962 | 0.865 | 0.889 | 0.923 |
+
+### A6 — Dense + cross-encoder re-rank
+
+| Category | n | P@3 | R@5 | MRR@10 | nDCG@10 | Hit@3 |
+|---|---|---|---|---|---|---|
+| ambiguous | 5 | 0.467 | 0.800 | 0.833 | 0.789 | 0.800 |
+| direct | 15 | 0.356 | 1.000 | 1.000 | 0.997 | 1.000 |
+| exact_id | 5 | 0.467 | 1.000 | 1.000 | 0.967 | 1.000 |
+| multi_chunk | 8 | 0.458 | 1.000 | 1.000 | 1.000 | 1.000 |
+| numeric | 5 | 0.533 | 1.000 | 0.900 | 0.927 | 1.000 |
+| paraphrase | 13 | 0.436 | 0.962 | 0.865 | 0.889 | 0.923 |
+
 ## Retrieval failures (no relevant chunk in the top 3)
 
 **A0** — 10 of 51 queries
@@ -126,3 +150,11 @@ that says where the system is actually weak.
 - `Q031` (multi_chunk) — *How do I submit an expense claim and by when?* → got `travel_policy__p1__c1, customer_support_sla__p1__c3`
 - `Q032` (multi_chunk) — *When does my salary get revised and when will I hear about it?* → got `payroll_policy__p1__c0, performance_review__p1__c1`
 - `Q050` (ambiguous) — *Tell me about notice periods and timing rules.* → got `customer_support_sla__p1__c2, communication_guidelines__p1__c2`
+
+**A5** — 2 of 51 queries
+- `Q019` (paraphrase) — *What happens to my stuff when I leave the company?* → got `device_and_asset_policy__p1__c1, security_policy__p1__c2`
+- `Q050` (ambiguous) — *Tell me about notice periods and timing rules.* → got `customer_support_sla__p1__c2, customer_support_sla__p1__c3`
+
+**A6** — 2 of 51 queries
+- `Q019` (paraphrase) — *What happens to my stuff when I leave the company?* → got `device_and_asset_policy__p1__c1, security_policy__p1__c2`
+- `Q050` (ambiguous) — *Tell me about notice periods and timing rules.* → got `customer_support_sla__p1__c2, customer_support_sla__p1__c3`

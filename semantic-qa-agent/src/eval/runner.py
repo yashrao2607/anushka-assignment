@@ -42,6 +42,7 @@ class ConfigResult:
     n_queries: int = 0
     failures: list[dict] = field(default_factory=list)
     bm25_top_n: int | None = None
+    reranked: bool = False
 
 
 def precision_ceiling(questions: list[GoldenQuestion], k: int) -> float:
@@ -66,6 +67,7 @@ def evaluate_config(
     description: str,
     mode: Mode,
     top_k: int = 10,
+    rerank: bool = False,
 ) -> ConfigResult:
     """Run every answerable golden question through one retrieval mode."""
     answerable = [q for q in questions if q.answerable and q.grades]
@@ -76,7 +78,7 @@ def evaluate_config(
 
     for q in answerable:
         t0 = time.perf_counter()
-        hits, _ = retriever.retrieve(q.question, top_k=top_k, mode=mode)
+        hits, _ = retriever.retrieve(q.question, top_k=top_k, mode=mode, rerank=rerank)
         latencies.append((time.perf_counter() - t0) * 1000)
         retrieved = [h.chunk_id for h in hits]
 
@@ -103,6 +105,7 @@ def evaluate_config(
         per_category={c: aggregate(v) for c, v in sorted(by_category.items())},
         category_counts={c: len(v) for c, v in sorted(by_category.items())},
         bm25_top_n=retriever.bm25_top_n if mode in ("sparse", "hybrid") else None,
+        reranked=rerank,
         latency_ms={
             "p50": round(statistics.median(latencies), 1) if latencies else 0.0,
             "p95": round(latencies[int(len(latencies) * 0.95) - 1], 1) if latencies else 0.0,
@@ -117,11 +120,11 @@ def evaluate_config(
 # Ablation definitions -- PRD Section 13.3, rows A0-A4 (Phase 2 scope)
 # --------------------------------------------------------------------------- #
 
-# (name, description, mode, bm25_top_n override)
-ABLATIONS: list[tuple[str, str, Mode, int | None]] = [
-    ("A0", "Keyword baseline (BM25 only)", "sparse", None),
-    ("A1", "Dense only (MiniLM bi-encoder)", "dense", None),
-    ("A4", "Hybrid (dense + BM25, RRF)", "hybrid", None),
+# (name, description, mode, bm25_top_n override, rerank)
+ABLATIONS: list[tuple[str, str, Mode, int | None, bool]] = [
+    ("A0", "Keyword baseline (BM25 only)", "sparse", None, False),
+    ("A1", "Dense only (MiniLM bi-encoder)", "dense", None, False),
+    ("A4", "Hybrid (dense + BM25, RRF)", "hybrid", None, False),
     # A4b tests a specific hypothesis rather than adding a variant for its own
     # sake: if hybrid underperforms dense on paraphrase queries, the cause
     # should be BM25 *rank dilution* -- on a small corpus BM25's top-25 is over
@@ -129,7 +132,13 @@ ABLATIONS: list[tuple[str, str, Mode, int | None]] = [
     # rewards. Narrowing the sparse leg to its top-5 should recover paraphrase
     # performance while keeping the exact-identifier wins. If it does, the
     # diagnosis is confirmed; if it does not, the hypothesis was wrong.
-    ("A4b", "Hybrid, sparse leg narrowed to top-5", "hybrid", 5),
+    ("A4b", "Hybrid, sparse leg narrowed to top-5", "hybrid", 5, False),
+    # Phase 3: the two-stage architecture. A5 tests whether a cross-encoder
+    # closes the rank-quality gap that Phase 2 measured and diagnosed; A6 checks
+    # whether re-ranking a dense-only pool does as well, which would mean the
+    # sparse leg is carrying no weight once a re-ranker is present.
+    ("A5", "Hybrid + cross-encoder re-rank", "hybrid", None, True),
+    ("A6", "Dense + cross-encoder re-rank", "dense", None, True),
 ]
 
 
@@ -155,12 +164,12 @@ def run_evaluation(cfg: Config, retriever: Retriever, only: str | None = None) -
     arms = [a for a in ABLATIONS if only is None or a[0] == only]
     results: list[ConfigResult] = []
     original_bm25_top_n = retriever.bm25_top_n
-    for name, description, mode, bm25_top_n in arms:
+    for name, description, mode, bm25_top_n, rerank in arms:
         log.info("evaluating %s -- %s", name, description)
         retriever.bm25_top_n = bm25_top_n or original_bm25_top_n
         results.append(
             evaluate_config(retriever, questions, name=name,
-                            description=description, mode=mode)
+                            description=description, mode=mode, rerank=rerank)
         )
     retriever.bm25_top_n = original_bm25_top_n
 
@@ -179,6 +188,7 @@ def run_evaluation(cfg: Config, retriever: Retriever, only: str | None = None) -
                 "name": r.name, "description": r.description, "mode": r.mode,
                 "metrics": r.metrics, "per_category": r.per_category,
                 "category_counts": r.category_counts, "bm25_top_n": r.bm25_top_n,
+                "reranked": r.reranked,
                 "latency_ms": r.latency_ms, "n_queries": r.n_queries,
                 "n_failures": len(r.failures),
                 "precision@3_pct_of_ceiling": round(
