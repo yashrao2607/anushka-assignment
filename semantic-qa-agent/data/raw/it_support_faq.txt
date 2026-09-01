@@ -1,0 +1,24 @@
+IT SUPPORT FREQUENTLY ASKED QUESTIONS
+
+DEVICE FAILS TO BOOT
+If a device shows no display and no power indicator, first disconnect all
+peripherals and hold the power button for fifteen seconds. Reconnect the
+charger and wait two minutes before attempting to power on again. If the
+machine still does not start, raise a ticket with error code ERR_4092 and the
+hardware team will arrange a replacement within one business day.
+
+PASSWORD RESET
+Passwords expire every 90 days. A self-service reset is available at the
+identity portal. Three failed attempts will lock the account for 30 minutes.
+Accounts locked for a fourth time must be unlocked by the service desk.
+
+VPN CONNECTION ISSUES
+If the VPN client reports error code ERR_7731, the certificate on the device has
+expired. Reinstalling the client from the software centre reissues the
+certificate automatically. VPN access is required for all internal systems when
+working outside the office network.
+
+SOFTWARE INSTALLATION REQUESTS
+Software not present in the software centre requires a security review before
+installation. Submit the request with a business justification. Standard review
+time is three business days.
