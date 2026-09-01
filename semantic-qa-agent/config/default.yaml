@@ -35,8 +35,8 @@ cleaning:
 
 chunking:
   strategy: recursive               # recursive | sentence
-  chunk_size_tokens: 512
-  overlap_tokens: 64
+  chunk_size_tokens: 128
+  overlap_tokens: 24
   min_chunk_chars: 30               # drop fragments smaller than this
   max_non_alnum_ratio: 0.8          # drop garbage/OCR-noise chunks
   prefix_with_heading: true         # "[Doc > Section] text" -> better retrieval
