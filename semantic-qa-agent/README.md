@@ -16,20 +16,32 @@ information.
 |---|---|---|
 | **Phase 1** | Foundation & ingestion — config, loaders, cleaner, chunker, pipeline | ✅ **Complete** |
 | **Phase 2** | Embeddings + cache, ChromaDB, 60-question golden set, evaluation harness, BM25 + RRF hybrid | ✅ **Complete** |
-| Phase 3 | Cross-encoder re-ranking, Groq grounded generation, refusal gate, UI, full ablation | ⬜ Next |
+| **Phase 3** | Cross-encoder re-ranking, Groq grounded generation, citations, calibrated refusal, UI, full ablation | ✅ **Complete** |
 
-### Headline result (measured, 51 golden questions)
+### Headline results (measured, 51 golden questions · 109 tests passing)
 
-| Configuration | MRR@10 | nDCG@10 | Recall@10 | **Paraphrase Hit@3** |
-|---|---|---|---|---|
-| A0 — BM25 keyword baseline | 0.738 | 0.738 | 0.853 | **0.462** |
-| A1 — Dense semantic | **0.898** | **0.886** | 0.971 | **1.000** |
-| A4 — Hybrid + RRF | 0.852 | 0.861 | **0.980** | 0.692 |
+| # | Configuration | P@3 | R@10 | MRR@10 | nDCG@10 |
+|---|---|---|---|---|---|
+| A0 | BM25 keyword baseline | 0.314 | 0.853 | 0.738 | 0.738 |
+| A1 | Dense semantic | 0.366 | 0.971 | 0.898 | 0.886 |
+| A4 | Hybrid + RRF | 0.379 | 0.980 | 0.852 | 0.861 |
+| **A5** | **Hybrid + cross-encoder re-rank** ← shipped | **0.431** | **1.000** | **0.941** | **0.942** |
 
-On paraphrased questions, keyword search misses entirely more than half the time;
-semantic search finds the answer **every time**. Full analysis — including a
-refuted hypothesis about hybrid retrieval — in
-[`reports/PHASE2_REPORT.md`](reports/PHASE2_REPORT.md).
+**Against the keyword baseline: +37% Precision@3, +27% MRR, +28% nDCG, perfect
+Recall@10.** On paraphrased questions keyword search misses entirely more than
+half the time; the shipped system finds the answer 92% of the time.
+
+| Answer quality | Target | Measured |
+|---|---|---|
+| Faithfulness (M7) | ≥ 0.90 | **1.000** |
+| Answer relevance (M8) | ≥ 0.88 | **0.909** |
+| Citation accuracy (M9) | ≥ 0.95 | **1.000** |
+| Refusal correctness (M10) | ≥ 0.90 | **1.000** |
+| Hallucination rate (M11) | ≤ 0.05 | **0.000** |
+
+Phase reports: [Phase 1](reports/PHASE1_REPORT.md) ·
+[Phase 2](reports/PHASE2_REPORT.md) (includes a **refuted** hypothesis) ·
+[Phase 3](reports/PHASE3_REPORT.md)
 
 ---
 
@@ -48,8 +60,19 @@ python -m src.cli index             # embed + build dense (Chroma) and BM25 inde
 python -m src.cli query "can I get money back for a cancelled trip?" --compare
 python -m src.cli evaluate          # golden set -> reports/eval_report.md + ablation.md
 
-python -m pytest tests/ -q          # 71 tests
+# Phase 3 -- answers, citations, refusal, UI
+python -m src.cli calibrate         # calibrate the refusal threshold (0 API calls)
+python -m src.cli ask "can I get money back for a cancelled trip?"
+python -m src.cli ask "do we allow pets in the office?"   # refuses, 0 API calls
+python scripts/failure_analysis.py  # diagnose every remaining failure
+streamlit run app.py                # web UI
+
+python -m pytest tests/ -q          # 109 tests
 ```
+
+**Groq setup.** Put your key in `semantic-qa-agent/.env` (gitignored):
+`GROQ_API_KEY=gsk_...`. Everything except `ask` and `judge` runs with **zero API
+calls** — including the entire refusal calibration.
 
 `--compare` runs BM25, dense and hybrid side by side on the same query — the
 fastest way to see the vocabulary-mismatch problem this project exists to solve.
