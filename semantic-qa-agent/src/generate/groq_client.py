@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -90,6 +91,11 @@ class GroqClient:
 
         self.cache_path = cache_path or (root / ".cache" / "groq_responses.json")
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        # Same reasoning as EmbeddingCache: Streamlit runs each rerun on a new
+        # thread while holding this object in @st.cache_resource, so the cache
+        # dict and its file are genuinely shared mutable state. The write is a
+        # read-modify-write, which without a lock can silently drop entries.
+        self._lock = threading.RLock()
         self._cache: dict[str, str] = {}
         if self.cache_path.exists():
             try:
@@ -111,9 +117,12 @@ class GroqClient:
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
     def _save_cache(self) -> None:
-        tmp = self.cache_path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(self._cache, indent=0), encoding="utf-8")
-        tmp.replace(self.cache_path)
+        with self._lock:
+            # Written to a temp file then atomically replaced, so an interrupted
+            # write can never leave a half-serialised cache on disk.
+            tmp = self.cache_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self._cache, indent=0), encoding="utf-8")
+            tmp.replace(self.cache_path)
 
     def complete(
         self,
@@ -130,9 +139,10 @@ class GroqClient:
         model = model or self.model
         key = self._key(system, user, model, json_mode, reasoning_effort)
 
-        if use_cache and key in self._cache:
-            self.usage.calls_cached += 1
-            return self._cache[key]
+        with self._lock:
+            if use_cache and key in self._cache:
+                self.usage.calls_cached += 1
+                return self._cache[key]
 
         if not self.api_key:
             raise GroqError(
@@ -219,7 +229,8 @@ class GroqClient:
             self.usage.prompt_tokens += int(usage.get("prompt_tokens", 0))
             self.usage.completion_tokens += int(usage.get("completion_tokens", 0))
 
-            self._cache[key] = text
+            with self._lock:
+                self._cache[key] = text
             self._save_cache()
             return text
 

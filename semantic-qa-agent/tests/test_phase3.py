@@ -406,3 +406,64 @@ def test_calibration_report_exists_and_is_well_formed():
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert 0.0 < payload["recommended_threshold"] < 1.0
     assert payload["at_recommended"]["refusal_correctness"] >= 0.9
+
+
+# --------------------------------------------------------------------------- #
+# Thread safety -- regression tests for a bug found by running the Streamlit UI
+# --------------------------------------------------------------------------- #
+
+def test_embedding_cache_is_usable_across_threads(tmp_path):
+    """REGRESSION: Streamlit caches the Answerer via @st.cache_resource but runs
+    each rerun on a NEW script-runner thread. sqlite3 refuses cross-thread use by
+    default, so the second UI interaction crashed with
+    `ProgrammingError: SQLite objects created in a thread can only be used in
+    that same thread`. A single-threaded test suite could never catch this.
+    """
+    import threading
+
+    from src.embed.embedder import EmbeddingCache
+    import numpy as np
+
+    cache = EmbeddingCache(tmp_path / "c.sqlite")
+    cache.put_many({"seed": np.ones(3, dtype=np.float32)})
+
+    errors: list[str] = []
+
+    def worker(i: int) -> None:
+        try:
+            cache.put_many({f"k{i}": np.full(3, float(i), dtype=np.float32)})
+            cache.get_many([f"k{i}", "seed"])
+        except Exception as exc:
+            errors.append(f"{type(exc).__name__}: {exc}")
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == [], f"cross-thread cache access failed: {errors}"
+    assert len(cache.get_many([f"k{i}" for i in range(8)])) == 8
+
+
+def test_groq_cache_survives_concurrent_writes(tmp_path):
+    """Same bug class: the response cache is a read-modify-write on shared state,
+    so without a lock concurrent Streamlit threads can silently drop entries."""
+    import threading
+
+    client = GroqClient(root=tmp_path, cache_path=tmp_path / "g.json")
+
+    def worker(i: int) -> None:
+        with client._lock:
+            client._cache[f"key{i}"] = f"value{i}"
+        client._save_cache()
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert len(client._cache) == 10
+    on_disk = json.loads((tmp_path / "g.json").read_text(encoding="utf-8"))
+    assert len(on_disk) == 10  # the file is valid JSON, not a torn write
