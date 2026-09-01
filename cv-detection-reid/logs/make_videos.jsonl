@@ -1,3 +1,4 @@
 {"ts": "2026-09-01T05:50:23+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "extracted sprites: {'bus': 1, 'person': 6}"}
 {"ts": "2026-09-01T05:50:26+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene01_camA: 450 frames -> scene01_camA.mp4, gt -> scene01_camA_gt.txt [day, 4 actors]"}
 {"ts": "2026-09-01T05:50:31+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene02_camA: 450 frames -> scene02_camA.mp4, gt -> scene02_camA_gt.txt [dusk, 4 actors]"}
+{"ts": "2026-09-01T05:50:53+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene03_camA: 450 frames -> scene03_camA.mp4, gt -> scene03_camA_gt.txt [night, 3 actors]"}
