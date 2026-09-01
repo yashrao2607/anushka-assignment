@@ -92,21 +92,34 @@ def assign_scenes(
     # Largest first; the shuffle above only decides ties.
     scene_ids.sort(key=lambda s: len(groups[s]), reverse=True)
 
-    # Guarantee every split is non-empty when there are enough scenes to do so,
-    # otherwise a 3-scene dataset can hand every frame to train and leave the
-    # test split empty -- which reads as "no leakage" while being useless.
-    if len(scene_ids) >= len(SPLITS):
-        for split, scene in zip(sorted(SPLITS, key=lambda s: ratios[s]), reversed(scene_ids[-len(SPLITS):])):
-            assignment[scene] = split
-            current[split] += len(groups[scene])
-
     for scene in scene_ids:
-        if scene in assignment:
-            continue
         deficit = {s: targets[s] - current[s] for s in SPLITS}
-        split = max(SPLITS, key=lambda s: (deficit[s], -ratios[s]))
+        split = max(SPLITS, key=lambda s: (deficit[s], ratios[s]))
         assignment[scene] = split
         current[split] += len(groups[scene])
+
+    # Greedy can still starve a small split when scenes are large and few. A
+    # dataset with an empty test split reads as "no leakage" while being
+    # useless, so rebalance by moving the smallest scene out of the split with
+    # the largest surplus. Done after the fact rather than by pre-seeding,
+    # because pre-seeding distorts the ratios in the common case to guard
+    # against the rare one.
+    if len(scene_ids) >= len(SPLITS):
+        for split in SPLITS:
+            if current[split] > 0:
+                continue
+            donor = max(
+                (s for s in SPLITS if sum(1 for v in assignment.values() if v == s) > 1),
+                key=lambda s: current[s] - targets[s],
+                default=None,
+            )
+            if donor is None:
+                continue
+            movable = [sc for sc, sp in assignment.items() if sp == donor]
+            scene = min(movable, key=lambda sc: len(groups[sc]))
+            assignment[scene] = split
+            current[donor] -= len(groups[scene])
+            current[split] += len(groups[scene])
 
     return assignment
 
@@ -172,6 +185,21 @@ def _summarise(
         missing = [s for s in SPLITS if counts.get(s, 0) and class_counts[s][name] == 0]
         if missing and any(class_counts[s][name] for s in SPLITS):
             warnings.append(f"class '{name}' is absent from split(s): {', '.join(missing)}")
+
+    # Scene-level splitting is correct but not automatically *representative*:
+    # with few scenes, a whole split can land on one lighting condition, and
+    # every metric computed on it is then a night metric wearing an average's
+    # name. Flagged rather than silently fixed -- fixing it by moving scenes
+    # would mean choosing the test set to flatter the model.
+    lighting = {s: Counter(r.lighting for r in rows if r.split == s) for s in SPLITS}
+    for split in SPLITS:
+        dist = lighting[split]
+        if counts.get(split, 0) and len(dist) == 1 and len(set(r.lighting for r in rows)) > 1:
+            only = next(iter(dist))
+            warnings.append(
+                f"split '{split}' contains only '{only}' lighting -- its metrics describe "
+                f"that condition, not an average. Add scenes or read the sliced table."
+            )
 
     for w in warnings:
         log.warning(w, extra={"event": "split_warning"})
