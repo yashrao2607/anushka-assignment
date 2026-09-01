@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Generated data. The manifest IS committed: it is the dataset version record
+# that the leakage test runs against, and reports reference its hash.
+data/frames/
+data/splits/
+data/labels/
+data/raw_videos/*.mp4
+data/sprites/
+!data/manifest.csv
+
+# Training artefacts
+runs/
+*.pt
+!yolo11n.pt
+*.onnx
+*.engine
+logs/
+
+# Report media (the .md/.json reports are committed; the pixels are not)
+reports/failures/*.jpg
+reports/tracks/
+reports/demo/
