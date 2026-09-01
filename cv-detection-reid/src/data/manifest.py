@@ -13,7 +13,7 @@ one artefact whose schema must not drift, so it is defined once, here.
 from __future__ import annotations
 
 import csv
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -86,7 +86,14 @@ def read_manifest(path: Path) -> list[ManifestRow]:
         raise FileNotFoundError(
             f"manifest not found: {path} -- run `python -m src.cli sample` first"
         )
-    typed = {f.name: f.type for f in fields(ManifestRow)}
+    # `from __future__ import annotations` makes `field.type` a *string*, so the
+    # converter table is explicit rather than inferred -- an inferred one
+    # silently degrades every numeric column to text and breaks the slices.
+    typed: dict[str, type] = {
+        "frame_no": int, "width": int, "height": int, "n_objects": int,
+        "timestamp_s": float, "blur_score": float, "brightness": float,
+        "contrast": float, "motion_score": float,
+    }
     out: list[ManifestRow] = []
     with path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
@@ -96,9 +103,9 @@ def read_manifest(path: Path) -> list[ManifestRow]:
         for raw in reader:
             kwargs: dict[str, Any] = {}
             for key, value in raw.items():
-                if key not in typed:
+                if key not in COLUMNS:
                     continue
-                t = typed[key]
+                t = typed.get(key)
                 if t is int:
                     kwargs[key] = int(float(value)) if value else 0
                 elif t is float:
