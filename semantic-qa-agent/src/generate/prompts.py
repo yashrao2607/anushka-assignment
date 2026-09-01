@@ -91,26 +91,29 @@ def build_context(chunks: list, max_tokens: int = 3000) -> tuple[str, list]:
     return "\n\n".join(blocks), used
 
 
-# Models do not reliably emit the ASCII brackets the prompt asks for. gpt-oss
-# frequently returns CJK lenticular brackets (U+3010/U+3011), and others use
-# parentheses or superscripts. Parsing only `[1]` silently drops every citation
-# from an answer that is in fact perfectly grounded -- which reads as a total
-# failure of the citation feature when nothing is actually wrong. Accept the
-# common variants rather than trusting the model to obey formatting.
-CITATION_RE = re.compile(r"[\[【［(](\d{1,2})[\]】］)]")
-
-# Normalised to ASCII before display, so the rendered answer is consistent
-# regardless of which bracket style the model chose.
-_BRACKET_NORMALISE = [
-    (re.compile(r"【(\d{1,2})】"), r"[\1]"),
-    (re.compile(r"［(\d{1,2})］"), r"[\1]"),
-]
+# Models do not reliably emit the ASCII brackets the prompt asks for, and the
+# variation is wider than it first appears. Observed from gpt-oss alone:
+#     [1]            the requested form
+#     【1】           CJK lenticular brackets
+#     【1†L1-L3】     OpenAI file-citation style, with a line-range suffix
+# Parsing only `[1]` silently drops every citation from an answer that is in
+# fact perfectly grounded -- which reads as a total failure of the flagship
+# feature when nothing is actually wrong. So: accept a bracket, a number, and an
+# optional suffix, rather than trusting the model to obey a formatting rule.
+#
+# Parentheses are deliberately NOT accepted: "(1)" appears constantly in ordinary
+# prose ("within (1) business day"), and treating it as a citation would invent
+# references that were never made.
+CITATION_RE = re.compile(r"[\[【［](\d{1,2})(?:[^\]】］\[【［]{0,40})?[\]】］]")
 
 
 def normalize_citation_markers(answer: str) -> str:
-    for pattern, replacement in _BRACKET_NORMALISE:
-        answer = pattern.sub(replacement, answer)
-    return answer
+    """Rewrite every accepted citation form to plain ASCII `[n]`.
+
+    Applied before display so the rendered answer is consistent regardless of
+    which bracket style the model happened to choose.
+    """
+    return CITATION_RE.sub(lambda m: f"[{int(m.group(1))}]", answer)
 
 
 def extract_citations(answer: str) -> list[int]:

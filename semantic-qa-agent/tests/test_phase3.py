@@ -141,8 +141,21 @@ def test_extract_citations_accepts_cjk_brackets():
     assert extract_citations("grounded claim【1】and another【2】") == [1, 2]
 
 
+def test_extract_citations_accepts_suffixed_file_citations():
+    """Second observed variant: 【1†L1-L3】, OpenAI file-citation style with a
+    line range. Found while running the demo, after the CJK fix had landed."""
+    assert extract_citations("hardware failure【1†L1-L3】【2†L4-L7】") == [1, 2]
+
+
+def test_extract_citations_ignores_parenthesised_numbers_in_prose():
+    """`(1)` is ordinary prose, not a citation. Accepting it would invent
+    references the model never made."""
+    assert extract_citations("resolved within (1) business day") == []
+
+
 def test_normalize_citation_markers_produces_ascii():
-    assert normalize_citation_markers("see【3】here") == "see [3] here".replace(" [3] ", "[3]")
+    assert normalize_citation_markers("see【3】here") == "see[3]here"
+    assert normalize_citation_markers("x【2†L4-L7】y") == "x[2]y"
 
 
 def test_validate_citations_accepts_valid_markers():
