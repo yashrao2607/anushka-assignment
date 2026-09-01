@@ -1,13 +1,13 @@
 # Cross-Camera Re-Identification (PRD §9.4, M18)
 
-*Generated 2026-09-01T06:32:27+00:00*
+*Generated 2026-09-01T06:35:36+00:00*
 
 ## Provenance
 
 | Key                | Value        |
 |--------------------|--------------|
 | config fingerprint | f0a93d2104cf |
-| git commit         | 7103699      |
+| git commit         | 35d0b15      |
 | tau_reid           | 0.3          |
 | reid_backend       | resnet18     |
 | reid_model         | resnet18     |
