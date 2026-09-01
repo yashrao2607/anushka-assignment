@@ -42,8 +42,20 @@ def _build_parser() -> argparse.ArgumentParser:
     p_inspect.add_argument("--n", type=int, default=3, help="number of chunks to show")
     p_inspect.add_argument("--doc", default=None, help="filter to one doc_id")
 
-    for name, phase in (("query", "Phase 2"), ("evaluate", "Phase 2"), ("serve", "Phase 3")):
-        sub.add_parser(name, help=f"[{phase}] not yet implemented")
+    p_index = sub.add_parser("index", help="embed chunks and build the dense + sparse indexes")
+    p_index.add_argument("--backend", default=None, choices=["chroma", "numpy"])
+
+    p_query = sub.add_parser("query", help="search the corpus")
+    p_query.add_argument("text", help="the natural-language question")
+    p_query.add_argument("-k", "--top-k", type=int, default=5)
+    p_query.add_argument("--mode", default="hybrid", choices=["dense", "sparse", "hybrid"])
+    p_query.add_argument("--compare", action="store_true",
+                         help="run all three modes side by side")
+
+    p_eval = sub.add_parser("evaluate", help="run the golden set and write the reports")
+    p_eval.add_argument("--only", default=None, help="run a single ablation arm, e.g. A4")
+
+    sub.add_parser("serve", help="[Phase 3] not yet implemented")
     return parser
 
 
@@ -127,10 +139,85 @@ def cmd_inspect(args, cfg) -> int:
     return 0
 
 
+def cmd_index(args, cfg) -> int:
+    from .store.index import build_index
+
+    log = setup_logging(cfg.path("logs_dir"), args.verbose)
+    log.info("building indexes...")
+    stats = build_index(cfg, backend=args.backend)
+    print()
+    print(render_table(list(stats.items()), "INDEX BUILD"))
+    return 0
+
+
+def _print_hits(hits, trace, header: str) -> None:
+    print(f"\n{header}   ({trace.total_ms:.0f} ms  "
+          f"embed {trace.embed_ms:.0f} / dense {trace.dense_ms:.0f} / "
+          f"bm25 {trace.bm25_ms:.0f})")
+    if not hits:
+        print("  (no results)")
+        return
+    for h in hits:
+        legs = []
+        if h.dense_rank:
+            legs.append(f"dense#{h.dense_rank} {h.dense_score:.3f}")
+        if h.bm25_rank:
+            legs.append(f"bm25#{h.bm25_rank} {h.bm25_score:.2f}")
+        meta = h.metadata
+        print(f"  {h.final_rank}. [{h.score:.4f}] {meta.get('doc_title')} "
+              f"> {meta.get('section_heading')}   ({' | '.join(legs) or 'n/a'})")
+        snippet = " ".join(h.text.split())[:150]
+        print(f"     {snippet}...")
+
+
+def cmd_query(args, cfg) -> int:
+    from .store.index import load_retriever
+
+    setup_logging(cfg.path("logs_dir"), args.verbose)
+    retriever = load_retriever(cfg)
+    print(f'\nQUERY: "{args.text}"')
+
+    if args.compare:
+        # Side-by-side is the whole point of Phase 2: it shows *where* keyword
+        # search fails and semantic search does not.
+        for mode, label in (("sparse", "A0  BM25 keyword"),
+                            ("dense", "A1  Dense semantic"),
+                            ("hybrid", "A4  Hybrid + RRF")):
+            hits, trace = retriever.retrieve(args.text, top_k=args.top_k, mode=mode)
+            _print_hits(hits, trace, label)
+    else:
+        hits, trace = retriever.retrieve(args.text, top_k=args.top_k, mode=args.mode)
+        _print_hits(hits, trace, f"mode={args.mode}")
+    print()
+    return 0
+
+
+def cmd_evaluate(args, cfg) -> int:
+    from .eval.runner import run_evaluation
+    from .store.index import load_retriever
+
+    setup_logging(cfg.path("logs_dir"), args.verbose)
+    retriever = load_retriever(cfg)
+    payload = run_evaluation(cfg, retriever, only=args.only)
+
+    print()
+    print(f"{'Config':<34} {'P@3':>7} {'P@5':>7} {'R@10':>7} "
+          f"{'MRR':>7} {'nDCG':>7} {'p95ms':>7}")
+    print("-" * 80)
+    for r in payload["results"]:
+        m = r["metrics"]
+        print(f"{r['name'] + '  ' + r['description']:<34} "
+              f"{m['precision@3']:>7.3f} {m['precision@5']:>7.3f} "
+              f"{m['recall@10']:>7.3f} {m['mrr@10']:>7.3f} "
+              f"{m['ndcg@10']:>7.3f} {r['latency_ms']['p95']:>7.1f}")
+    print("-" * 80)
+    print(f"reports/eval_report.md · reports/ablation.md · reports/eval_results.json")
+    return 0
+
+
 def cmd_not_ready(args, cfg) -> int:
-    phase = {"query": "Phase 2", "evaluate": "Phase 2", "serve": "Phase 3"}[args.command]
-    print(f"`{args.command}` is scheduled for {phase}. Phase 1 delivers: "
-          f"ingest, stats, inspect.")
+    print(f"`{args.command}` is scheduled for Phase 3. "
+          f"Phase 2 delivers: index, query, evaluate.")
     return 2
 
 
@@ -150,7 +237,8 @@ def main(argv: list[str] | None = None) -> int:
 
     handlers = {
         "ingest": cmd_ingest, "stats": cmd_stats, "inspect": cmd_inspect,
-        "query": cmd_not_ready, "evaluate": cmd_not_ready, "serve": cmd_not_ready,
+        "index": cmd_index, "query": cmd_query, "evaluate": cmd_evaluate,
+        "serve": cmd_not_ready,
     }
     try:
         return handlers[args.command](args, cfg)
