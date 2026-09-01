@@ -21,3 +21,4 @@
 {"ts": "2026-09-01T06:14:39+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene16_camA: 450 frames -> scene16_camA.mp4, gt -> scene16_camA_gt.txt [day, 4 actors, occluder]"}
 {"ts": "2026-09-01T06:34:25+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "using cached sprites: {'bus': 1, 'person': 6}"}
 {"ts": "2026-09-01T06:34:34+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene01_camA: 450 frames -> scene01_camA.mp4, gt -> scene01_camA_gt.txt [day, 4 actors]"}
+{"ts": "2026-09-01T06:34:49+00:00", "level": "INFO", "logger": "cvdr.scripts.make_videos", "msg": "scene02_camA: 450 frames -> scene02_camA.mp4, gt -> scene02_camA_gt.txt [dusk, 4 actors]"}
