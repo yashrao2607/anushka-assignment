@@ -1,0 +1,32 @@
+{
+  "export": {
+    "weights": "yolo11n.pt",
+    "fmt": "onnx",
+    "output": "yolo11n.onnx",
+    "size_mb": 10.21,
+    "ok": true,
+    "error": "",
+    "pytorch_map50": null,
+    "exported_map50": null,
+    "delta": null,
+    "parity_ok": null,
+    "timing": {}
+  },
+  "parity": {
+    "weights": "yolo11n.pt",
+    "fmt": "onnx",
+    "output": "yolo11n.onnx",
+    "size_mb": 0.0,
+    "ok": true,
+    "error": "",
+    "pytorch_map50": 0.4218,
+    "exported_map50": 0.4544,
+    "delta": 0.0326,
+    "parity_ok": false,
+    "timing": {
+      "pytorch_fps": 3.26,
+      "exported_fps": 5.62,
+      "speedup": 1.72
+    }
+  }
+}

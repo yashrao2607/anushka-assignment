@@ -1,13 +1,13 @@
 # Re-Identification Evaluation (PRD §4.4)
 
-*Generated 2026-09-01T06:35:17+00:00*
+*Generated 2026-09-01T06:37:37+00:00*
 
 ## Provenance
 
 | Key                | Value        |
 |--------------------|--------------|
 | config fingerprint | f0a93d2104cf |
-| git commit         | fe44fc5      |
+| git commit         | 76ee71c      |
 | split              | test         |
 | tau_reid           | 0.3          |
 | reid_backend       | resnet18     |
@@ -28,9 +28,9 @@
 
 | Sequence         | Events found | Scorable | Recovered | Rate | Gallery restores | FPS  |
 |------------------|--------------|----------|-----------|------|------------------|------|
-| scene04_camA.mp4 | 1            | 0        | 0         | n/a  | 4                | 3.22 |
-| scene07_camA.mp4 | 8            | 0        | 0         | n/a  | 3                | 3.08 |
-| scene13_camA.mp4 | 2            | 0        | 0         | n/a  | 3                | 3.75 |
+| scene04_camA.mp4 | 1            | 0        | 0         | n/a  | 4                | 3.5  |
+| scene07_camA.mp4 | 8            | 0        | 0         | n/a  | 3                | 2.91 |
+| scene13_camA.mp4 | 2            | 0        | 0         | n/a  | 3                | 3.05 |
 
 *Events found* are genuine occlusions in the ground truth. *Scorable* are those where the detector saw the object on both sides of the gap — an event that is not scorable is a **detection** failure, and charging it to ReID would measure the wrong component.
 
