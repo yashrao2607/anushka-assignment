@@ -74,8 +74,8 @@ gate:
   refusal_message: "I could not find information about this in the provided documents."
 
 generation:
-  provider: ollama
-  model: llama3.1:8b-instruct
+  provider: groq
+  model: llama-3.3-70b-versatile
   temperature: 0.0
   num_ctx: 4096
   max_context_tokens: 3000
