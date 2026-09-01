@@ -50,7 +50,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p_query.add_argument("-k", "--top-k", type=int, default=5)
     p_query.add_argument("--mode", default="hybrid", choices=["dense", "sparse", "hybrid"])
     p_query.add_argument("--compare", action="store_true",
-                         help="run all three modes side by side")
+                         help="run every ablation configuration side by side")
+    p_query.add_argument("--rerank", dest="rerank", action="store_true", default=None)
+    p_query.add_argument("--no-rerank", dest="rerank", action="store_false")
 
     p_eval = sub.add_parser("evaluate", help="run the golden set and write the reports")
     p_eval.add_argument("--only", default=None, help="run a single ablation arm, e.g. A4")
@@ -194,15 +196,24 @@ def cmd_query(args, cfg) -> int:
     print(f'\nQUERY: "{args.text}"')
 
     if args.compare:
-        # Side-by-side is the whole point of Phase 2: it shows *where* keyword
-        # search fails and semantic search does not.
-        for mode, label in (("sparse", "A0  BM25 keyword"),
-                            ("dense", "A1  Dense semantic"),
-                            ("hybrid", "A4  Hybrid + RRF")):
-            hits, trace = retriever.retrieve(args.text, top_k=args.top_k, mode=mode)
+        # These rows deliberately mirror the ablation arms in reports/ablation.md
+        # exactly -- same modes, same rerank setting. A demo that quietly applied
+        # re-ranking to every row would not be showing the reader the same system
+        # the numbers describe.
+        for mode, rerank, label in (
+            ("sparse", False, "A0  BM25 keyword only"),
+            ("dense", False, "A1  Dense semantic"),
+            ("hybrid", False, "A4  Hybrid + RRF"),
+            ("hybrid", True, "A5  Hybrid + cross-encoder re-rank  <- shipped"),
+        ):
+            hits, trace = retriever.retrieve(
+                args.text, top_k=args.top_k, mode=mode, rerank=rerank
+            )
             _print_hits(hits, trace, label)
     else:
-        hits, trace = retriever.retrieve(args.text, top_k=args.top_k, mode=args.mode)
+        hits, trace = retriever.retrieve(
+            args.text, top_k=args.top_k, mode=args.mode, rerank=args.rerank
+        )
         _print_hits(hits, trace, f"mode={args.mode}")
     print()
     return 0
